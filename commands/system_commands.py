@@ -1,4 +1,16 @@
-﻿"""System command execution layer for Jarvis voice actions."""
+﻿"""System command execution layer for Jarvis voice actions.
+
+This module:
+1. Maps voice commands to executable paths
+2. Validates and launches applications
+3. Provides structured error handling
+
+Commands are centralized here for easy extension with new capabilities.
+Future phases can add:
+- Web API calls
+- File operations
+- Custom integrations
+"""
 
 from __future__ import annotations
 
@@ -46,18 +58,47 @@ def _launch_first_available(candidates: tuple[Sequence[str], ...]) -> bool:
     return False
 
 
+def is_exit_command(text: str) -> bool:
+    """Check if the user is requesting to exit the assistant.
+
+    Args:
+        text: Recognized speech text from user.
+
+    Returns:
+        True if user said exit command, False otherwise.
+    """
+    command_text = text.strip().lower()
+    exit_variations = ("exit jarvis", "exit", "quit", "quit jarvis", "shutdown", "close")
+    return command_text in exit_variations
+
+
 def execute_command(text: str) -> bool:
-    """Execute supported system command from recognized speech text."""
+    """Execute supported system command from recognized speech text.
+
+    Args:
+        text: Recognized speech text from user.
+
+    Returns:
+        True if command was recognized and executed successfully,
+        False if command was not recognized or execution failed.
+    """
     command_text = text.strip().lower()
     if not command_text:
         return False
 
+    # Check for exit command (handled separately in assistant)
+    if is_exit_command(command_text):
+        logger.info("Exit command requested: %s", command_text)
+        return False
+
     candidates = COMMAND_MAP.get(command_text)
     if not candidates:
-        logger.info("Unknown command: %s", command_text)
+        logger.debug("Unknown command: %s", command_text)
         return False
 
     success = _launch_first_available(candidates)
-    if not success:
-        logger.error("Command recognized but no executable was launched: %s", command_text)
+    if success:
+        logger.info("Command executed successfully: %s", command_text)
+    else:
+        logger.warning("Command recognized but no executable was launched: %s", command_text)
     return success
