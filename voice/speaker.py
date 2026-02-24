@@ -1,4 +1,7 @@
-﻿"""Text-to-Speech speaker utility for Jarvis voice output."""
+﻿"""Text-to-Speech speaker utility for Jarvis voice output.
+
+Provides thread-safe offline speech synthesis using pyttsx3.
+"""
 
 from __future__ import annotations
 
@@ -6,6 +9,7 @@ import threading
 
 import pyttsx3
 
+from config.settings import SPEECH_RATE
 from utils.logger import get_logger
 
 logger = get_logger("jarvis.speaker")
@@ -44,23 +48,40 @@ def _get_engine() -> pyttsx3.Engine:
     with _ENGINE_LOCK:
         if _ENGINE is None:
             engine = pyttsx3.init()
-            # Medium, calm delivery speed.
-            engine.setProperty("rate", 165)
+            # Configure speech rate from settings
+            engine.setProperty("rate", SPEECH_RATE)
             _select_voice(engine)
             _ENGINE = engine
-            logger.info("TTS engine initialized.")
+            logger.info("TTS engine initialized with rate=%d", SPEECH_RATE)
 
     return _ENGINE
 
 
-def speak(text: str) -> None:
-    """Speak text using the configured offline TTS engine."""
+def speak(text: str) -> bool:
+    """Speak text using the configured offline TTS engine.
+
+    Wraps TTS operations in exception handling to prevent blocking
+    failures from crashing the assistant.
+
+    Args:
+        text: Text to speak. Whitespace is stripped.
+
+    Returns:
+        True if speech was successful, False if any error occurred.
+    """
     message = text.strip()
     if not message:
         logger.warning("Ignored empty text passed to speak().")
-        return
+        return False
 
-    engine = _get_engine()
-    with _ENGINE_LOCK:
-        engine.say(message)
-        engine.runAndWait()
+    try:
+        engine = _get_engine()
+        with _ENGINE_LOCK:
+            engine.say(message)
+            engine.runAndWait()
+        logger.debug("Spoke message: %s", message)
+        return True
+
+    except Exception as exc:
+        logger.error("Failed to speak message: %s. Error: %s", message, exc, exc_info=True)
+        return False
