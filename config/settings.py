@@ -1,8 +1,10 @@
-﻿"""Project configuration and constants for Jarvis Assistant.
+"""Project configuration and constants for Jarvis Assistant.
 
 Centralizes all configurable settings and constants used across modules.
-Scalable for future enhancements like wake word detection.
 """
+
+import os
+from pathlib import Path
 
 # ============================================================================
 # VOICE INPUT SETTINGS
@@ -24,6 +26,25 @@ ENERGY_THRESHOLD = 300
 # Speech rate for TTS output (words per minute)
 SPEECH_RATE = 165
 
+# TTS backend selector: "elevenlabs", "coqui", "fallback"
+TTS_BACKEND = os.getenv("TTS_BACKEND", "fallback").strip().lower()
+
+# Directory for cached TTS audio files
+AUDIO_CACHE_DIR = Path(os.getenv("AUDIO_CACHE_DIR", "cache/tts"))
+
+# ElevenLabs settings (cloud AI voice)
+ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "").strip()
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL").strip()
+ELEVENLABS_MODEL_ID = os.getenv("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5").strip()
+ELEVENLABS_OUTPUT_SAMPLE_RATE = int(os.getenv("ELEVENLABS_OUTPUT_SAMPLE_RATE", "16000"))
+
+# Coqui settings (local AI voice)
+# Can be a local model path or Coqui model id like "tts_models/en/ljspeech/tacotron2-DDC".
+COQUI_MODEL_PATH = os.getenv(
+    "COQUI_MODEL_PATH",
+    "tts_models/en/ljspeech/tacotron2-DDC",
+).strip()
+
 # ============================================================================
 # ASSISTANT MESSAGES
 # ============================================================================
@@ -38,7 +59,6 @@ UNKNOWN_COMMAND_MESSAGE = "I do not know that command yet."
 # ============================================================================
 
 # These can be spoken to trigger clean assistant shutdown
-# Examples: "exit jarvis", "quit", "shutdown"
 EXIT_COMMAND_VARIATIONS = (
     "exit jarvis",
     "exit",
@@ -49,9 +69,45 @@ EXIT_COMMAND_VARIATIONS = (
 )
 
 # ============================================================================
-# FUTURE WAKE WORD SETTINGS (Scalability)
+# WAKE WORD SETTINGS (Vosk Offline)
 # ============================================================================
 
-# Wake word detection can be integrated here in future phases
-# WAKE_WORD = "jarvis"
-# WAKE_WORD_THRESHOLD = 0.5
+# Spoken keyword that activates command listening.
+WAKE_WORD = "jarvis"
+
+# Local filesystem path to a downloaded Vosk model directory.
+VOSK_MODEL_PATH = Path("models") / "vosk-model-small-en-us-0.15"
+
+# Microphone stream configuration for wake-word detection.
+WAKE_SAMPLE_RATE = 16000
+WAKE_BLOCK_SIZE = 8000
+WAKE_CHANNELS = 1
+
+# How long wake loop waits for queued audio before checking stream health.
+WAKE_STREAM_READ_TIMEOUT_SECONDS = 1.0
+
+# Small sleep when no audio chunk is available (keeps CPU usage low).
+WAKE_IDLE_SLEEP_SECONDS = 0.02
+
+# Enable verbose logging of Vosk final/partial recognition text.
+WAKE_DEBUG_RESULTS = True
+
+# ============================================================================
+# AI FALLBACK SETTINGS (OLLAMA)
+# ============================================================================
+
+# Base URL for local Ollama server.
+# Default works for local install: http://localhost:11434
+OLLAMA_API_URL = os.getenv("OLLAMA_API_URL", "http://localhost:11434").strip()
+
+# Local model name available in Ollama (e.g., "llama3.2:3b", "qwen2.5:3b").
+OLLAMA_MODEL = os.getenv("OLLAMA_MODEL", "llama3.2:3b").strip()
+
+# Request timeout for fallback AI calls.
+AI_REQUEST_TIMEOUT_SECONDS = float(os.getenv("AI_REQUEST_TIMEOUT_SECONDS", "20"))
+
+# System prompt for concise Jarvis-style fallback responses.
+OLLAMA_SYSTEM_PROMPT = (
+    "You are Jarvis, a concise and helpful assistant. "
+    "Respond briefly and clearly."
+)
