@@ -12,7 +12,7 @@ from commands.system_commands import execute_command, is_exit_command
 from services.ai_service import ai_response, check_ai_fallback_health
 from utils.logger import get_logger
 from voice.listener import listen
-from voice.speaker import speak
+from voice.speaker import check_tts_backend_health, speak
 from wakeword.wake_engine import wait_for_wake_word
 
 logger = get_logger("jarvis.assistant")
@@ -34,6 +34,11 @@ class JarvisAssistant:
     def run(self) -> int:
         """Run assistant loop forever until exit command or interrupt."""
         logger.info("Starting Jarvis voice assistant...")
+        tts_ready, tts_status = check_tts_backend_health()
+        if tts_ready:
+            logger.info(tts_status)
+        else:
+            logger.warning(tts_status)
         ai_ready, ai_status = check_ai_fallback_health()
         if ai_ready:
             logger.info(ai_status)

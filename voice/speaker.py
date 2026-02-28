@@ -7,7 +7,13 @@ from pathlib import Path
 
 import pyttsx3
 
-from config.settings import AUDIO_CACHE_DIR, SPEECH_RATE, TTS_BACKEND
+from config.settings import (
+    AUDIO_CACHE_DIR,
+    COQUI_MODEL_PATH,
+    ELEVENLABS_API_KEY,
+    SPEECH_RATE,
+    TTS_BACKEND,
+)
 from utils.logger import get_logger
 from voice.ai_speaker import speak_with_ai
 
@@ -69,6 +75,34 @@ def _speak_with_pyttsx3(text: str) -> bool:
         return False
 
 
+def check_tts_backend_health() -> tuple[bool, str]:
+    """Return one-time readiness status for configured TTS backend."""
+    backend = TTS_BACKEND.strip().lower()
+
+    if backend == "fallback":
+        try:
+            _get_engine()
+            return True, "TTS backend READY: fallback (pyttsx3)"
+        except Exception as exc:
+            return False, f"TTS backend UNAVAILABLE: fallback (pyttsx3 init failed: {exc})"
+
+    if backend == "elevenlabs":
+        if not ELEVENLABS_API_KEY:
+            return False, "TTS backend UNAVAILABLE: elevenlabs (ELEVENLABS_API_KEY missing)"
+        return True, "TTS backend READY: elevenlabs"
+
+    if backend == "coqui":
+        try:
+            from TTS.api import TTS as _CoquiTTS  # type: ignore
+
+            _ = _CoquiTTS
+            return True, f"TTS backend READY: coqui (model={COQUI_MODEL_PATH})"
+        except Exception as exc:
+            return False, f"TTS backend UNAVAILABLE: coqui ({exc})"
+
+    return False, f"TTS backend UNAVAILABLE: unknown backend '{backend}'"
+
+
 def speak(text: str) -> bool:
     """Speak text using configured backend with automatic fallback.
 
@@ -102,4 +136,3 @@ def speak(text: str) -> bool:
         logger.warning("Unknown TTS_BACKEND '%s', using pyttsx3.", backend)
 
     return _speak_with_pyttsx3(message)
-
