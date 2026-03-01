@@ -103,7 +103,7 @@ def check_tts_backend_health() -> tuple[bool, str]:
     return False, f"TTS backend UNAVAILABLE: unknown backend '{backend}'"
 
 
-def speak(text: str) -> bool:
+def speak(text: str, emotion: str = "normal") -> bool:
     """Speak text using configured backend with automatic fallback.
 
     Entry point contract remains stable for the assistant:
@@ -124,8 +124,12 @@ def speak(text: str) -> bool:
     backend = TTS_BACKEND.strip().lower()
     if backend in {"elevenlabs", "coqui"}:
         try:
-            if speak_with_ai(message):
-                return True
+            if emotion == "normal":
+                if speak_with_ai(message):
+                    return True
+            else:
+                if speak_with_ai(message, emotion=emotion):
+                    return True
             logger.warning("AI TTS backend '%s' failed, using fallback.", backend)
         except Exception as exc:
             logger.error("AI TTS backend '%s' crashed: %s", backend, exc, exc_info=True)

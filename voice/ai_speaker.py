@@ -3,6 +3,7 @@
 from __future__ import annotations
 
 import json
+import re
 import threading
 import urllib.error
 import urllib.request
@@ -20,12 +21,14 @@ from config.settings import (
     TTS_BACKEND,
 )
 from utils.logger import get_logger
+from voice.ssml_builder import build_ssml
 from voice.tts_cache import get_cache_path, has_cache, log_cache_hit, make_cache_key
 
 logger = get_logger("jarvis.ai_speaker")
 
 _COQUI_ENGINE: Any | None = None
 _COQUI_LOCK = threading.Lock()
+_SSML_TAG_PATTERN = re.compile(r"<[^>]+>")
 
 
 def _play_audio_file(path: Path) -> bool:
@@ -140,7 +143,17 @@ def _backend_variant(backend: str) -> str:
     return "fallback"
 
 
-def speak_with_ai(text: str) -> bool:
+def _backend_supports_ssml(backend: str) -> bool:
+    """Return whether backend accepts SSML input directly."""
+    return backend == "elevenlabs"
+
+
+def _strip_ssml_tags(text: str) -> str:
+    """Strip SSML tags when speaking through non-SSML backends."""
+    return _SSML_TAG_PATTERN.sub("", text).strip()
+
+
+def speak_with_ai(text: str, emotion: str = "normal") -> bool:
     """Speak text using configured AI backend and audio cache.
 
     Returns:
@@ -155,8 +168,19 @@ def speak_with_ai(text: str) -> bool:
         logger.info("AI TTS backend '%s' not enabled; skip AI speaker.", backend)
         return False
 
+    logger.info("Selected speech mode: %s", emotion)
+    ssml_text = build_ssml(message, emotion)
+    if _backend_supports_ssml(backend):
+        speech_input = ssml_text
+    else:
+        logger.info("Backend '%s' does not support SSML; stripping SSML tags.", backend)
+        speech_input = _strip_ssml_tags(ssml_text)
+    if not speech_input:
+        logger.warning("Speech input empty after SSML processing.")
+        return False
+
     variant = _backend_variant(backend)
-    cache_key = make_cache_key(message, backend, variant)
+    cache_key = make_cache_key(speech_input, backend, variant)
     cache_path = get_cache_path(cache_key, ".wav")
 
     if has_cache(cache_path):
@@ -164,9 +188,9 @@ def speak_with_ai(text: str) -> bool:
         return _play_audio_file(cache_path)
 
     if backend == "elevenlabs":
-        ok = _synthesize_elevenlabs_to_cache(message, cache_path)
+        ok = _synthesize_elevenlabs_to_cache(speech_input, cache_path)
     else:
-        ok = _synthesize_coqui_to_cache(message, cache_path)
+        ok = _synthesize_coqui_to_cache(speech_input, cache_path)
 
     if not ok:
         return False

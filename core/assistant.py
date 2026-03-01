@@ -4,11 +4,11 @@ from __future__ import annotations
 
 from config.settings import (
     SHUTDOWN_MESSAGE,
-    STARTUP_MESSAGE,
     SUCCESS_MESSAGE,
     UNKNOWN_COMMAND_MESSAGE,
 )
 from commands.system_commands import execute_command, is_exit_command
+from core.greetings import get_time_based_greeting
 from services.ai_service import ai_response, check_ai_fallback_health
 from utils.logger import get_logger
 from voice.listener import listen
@@ -24,10 +24,10 @@ class JarvisAssistant:
     def __init__(self) -> None:
         logger.info("Jarvis Assistant initialized.")
 
-    def _safe_speak(self, message: str) -> None:
+    def _safe_speak(self, message: str, emotion: str = "normal") -> None:
         """Speak without allowing TTS failures to crash the loop."""
         try:
-            speak(message)
+            speak(message, emotion=emotion)
         except Exception as exc:
             logger.error("Failed to speak message '%s': %s", message, exc, exc_info=True)
 
@@ -44,7 +44,8 @@ class JarvisAssistant:
             logger.info(ai_status)
         else:
             logger.warning(ai_status)
-        self._safe_speak(STARTUP_MESSAGE)
+        startup_greeting = get_time_based_greeting()
+        self._safe_speak(startup_greeting, emotion="greeting")
 
         try:
             while True:
