@@ -21,6 +21,7 @@ logger = get_logger("jarvis.speaker")
 
 _ENGINE = None
 _ENGINE_LOCK = threading.Lock()
+_SPEAK_CALL_LOCK = threading.Lock()
 
 
 def _select_voice(engine: pyttsx3.Engine) -> None:
@@ -103,40 +104,45 @@ def check_tts_backend_health() -> tuple[bool, str]:
     return False, f"TTS backend UNAVAILABLE: unknown backend '{backend}'"
 
 
-def speak(text: str, emotion: str = "normal") -> bool:
+def speak(text: str, mode: str = "normal", emotion: str | None = None) -> bool:
     """Speak text using configured backend with automatic fallback.
 
     Entry point contract remains stable for the assistant:
     - Attempt configured AI backend (ElevenLabs or Coqui).
     - On any failure, fallback to pyttsx3.
     """
-    message = text.strip()
-    if not message:
-        logger.warning("Ignored empty text passed to speak().")
-        return False
+    with _SPEAK_CALL_LOCK:
+        message = text.strip()
+        if not message:
+            logger.warning("Ignored empty text passed to speak().")
+            return False
 
-    # Ensure cache directory exists for AI backend usage.
-    try:
-        Path(AUDIO_CACHE_DIR).mkdir(parents=True, exist_ok=True)
-    except Exception as exc:
-        logger.warning("Unable to initialize AUDIO_CACHE_DIR '%s': %s", AUDIO_CACHE_DIR, exc)
+        selected_mode = mode
+        if emotion is not None and mode == "normal":
+            selected_mode = emotion
 
-    backend = TTS_BACKEND.strip().lower()
-    if backend in {"elevenlabs", "coqui"}:
+        # Ensure cache directory exists for AI backend usage.
         try:
-            if emotion == "normal":
-                if speak_with_ai(message):
-                    return True
-            else:
-                if speak_with_ai(message, emotion=emotion):
-                    return True
-            logger.warning("AI TTS backend '%s' failed, using fallback.", backend)
+            Path(AUDIO_CACHE_DIR).mkdir(parents=True, exist_ok=True)
         except Exception as exc:
-            logger.error("AI TTS backend '%s' crashed: %s", backend, exc, exc_info=True)
+            logger.warning("Unable to initialize AUDIO_CACHE_DIR '%s': %s", AUDIO_CACHE_DIR, exc)
 
-    elif backend == "fallback":
-        logger.info("TTS_BACKEND=fallback, using pyttsx3.")
-    else:
-        logger.warning("Unknown TTS_BACKEND '%s', using pyttsx3.", backend)
+        backend = TTS_BACKEND.strip().lower()
+        if backend in {"elevenlabs", "coqui"}:
+            try:
+                if selected_mode == "normal":
+                    if speak_with_ai(message):
+                        return True
+                else:
+                    if speak_with_ai(message, mode=selected_mode):
+                        return True
+                logger.warning("AI TTS backend '%s' failed, using fallback.", backend)
+            except Exception as exc:
+                logger.error("AI TTS backend '%s' crashed: %s", backend, exc, exc_info=True)
 
-    return _speak_with_pyttsx3(message)
+        elif backend == "fallback":
+            logger.info("TTS_BACKEND=fallback, using pyttsx3.")
+        else:
+            logger.warning("Unknown TTS_BACKEND '%s', using pyttsx3.", backend)
+
+        return _speak_with_pyttsx3(message)

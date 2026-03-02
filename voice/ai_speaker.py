@@ -153,7 +153,7 @@ def _strip_ssml_tags(text: str) -> str:
     return _SSML_TAG_PATTERN.sub("", text).strip()
 
 
-def speak_with_ai(text: str, emotion: str = "normal") -> bool:
+def speak_with_ai(text: str, mode: str = "normal", emotion: str | None = None) -> bool:
     """Speak text using configured AI backend and audio cache.
 
     Returns:
@@ -163,13 +163,17 @@ def speak_with_ai(text: str, emotion: str = "normal") -> bool:
     if not message:
         return False
 
+    selected_mode = mode
+    if emotion is not None and mode == "normal":
+        selected_mode = emotion
+
     backend = TTS_BACKEND.strip().lower()
     if backend not in {"elevenlabs", "coqui"}:
         logger.info("AI TTS backend '%s' not enabled; skip AI speaker.", backend)
         return False
 
-    logger.info("Selected speech mode: %s", emotion)
-    ssml_text = build_ssml(message, emotion)
+    logger.info("Selected speech mode: %s", selected_mode)
+    ssml_text = build_ssml(message, selected_mode)
     if _backend_supports_ssml(backend):
         speech_input = ssml_text
     else:

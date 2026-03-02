@@ -14,6 +14,7 @@ Future phases can add:
 
 from __future__ import annotations
 
+import re
 import subprocess
 from typing import Sequence
 
@@ -41,6 +42,22 @@ COMMAND_MAP: dict[str, tuple[Sequence[str], ...]] = {
     "open visual studio code": VSCODE_CANDIDATES,
 }
 
+_NOISE_WORDS = {
+    "jarvis",
+    "please",
+    "can",
+    "you",
+    "kindly",
+    "the",
+    "app",
+    "application",
+    "for",
+    "me",
+    "now",
+}
+_NON_ALNUM_PATTERN = re.compile(r"[^a-z0-9\s]+")
+_MULTISPACE_PATTERN = re.compile(r"\s+")
+
 
 def _launch_first_available(candidates: tuple[Sequence[str], ...]) -> bool:
     """Try command candidates until one launches successfully."""
@@ -58,6 +75,45 @@ def _launch_first_available(candidates: tuple[Sequence[str], ...]) -> bool:
     return False
 
 
+def _normalize_command_text(text: str) -> str:
+    """Normalize spoken text to improve command matching reliability."""
+    lowered = text.strip().lower()
+    if not lowered:
+        return ""
+
+    cleaned = _NON_ALNUM_PATTERN.sub(" ", lowered)
+    tokens = [token for token in _MULTISPACE_PATTERN.split(cleaned) if token]
+    filtered = [token for token in tokens if token not in _NOISE_WORDS]
+    return " ".join(filtered)
+
+
+def _resolve_candidates(command_text: str) -> tuple[Sequence[str], ...] | None:
+    """Resolve command intent from normalized text."""
+    # Exact aliases first.
+    direct = COMMAND_MAP.get(command_text)
+    if direct:
+        return direct
+
+    words = set(command_text.split())
+    if not words:
+        return None
+
+    action_words = {"open", "launch", "start", "run"}
+    has_action = bool(words & action_words)
+    if not has_action:
+        return None
+
+    if "chrome" in words or "browser" in words:
+        return CHROME_CANDIDATES
+
+    if {"vscode", "code"} & words:
+        return VSCODE_CANDIDATES
+    if {"visual", "studio", "code"}.issubset(words):
+        return VSCODE_CANDIDATES
+
+    return None
+
+
 def is_exit_command(text: str) -> bool:
     """Check if the user is requesting to exit the assistant.
 
@@ -67,9 +123,8 @@ def is_exit_command(text: str) -> bool:
     Returns:
         True if user said exit command, False otherwise.
     """
-    command_text = text.strip().lower()
-    exit_variations = ("exit jarvis", "exit", "quit", "quit jarvis", "shutdown", "close")
-    return command_text in exit_variations
+    command_text = _normalize_command_text(text)
+    return command_text in {"exit", "quit", "shutdown", "close"}
 
 
 def execute_command(text: str) -> bool:
@@ -82,7 +137,7 @@ def execute_command(text: str) -> bool:
         True if command was recognized and executed successfully,
         False if command was not recognized or execution failed.
     """
-    command_text = text.strip().lower()
+    command_text = _normalize_command_text(text)
     if not command_text:
         return False
 
@@ -91,9 +146,9 @@ def execute_command(text: str) -> bool:
         logger.info("Exit command requested: %s", command_text)
         return False
 
-    candidates = COMMAND_MAP.get(command_text)
+    candidates = _resolve_candidates(command_text)
     if not candidates:
-        logger.debug("Unknown command: %s", command_text)
+        logger.info("Unknown command after normalization: %s", command_text)
         return False
 
     success = _launch_first_available(candidates)
