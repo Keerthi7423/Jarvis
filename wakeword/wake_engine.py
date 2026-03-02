@@ -123,6 +123,7 @@ def wait_for_wake_word() -> bool:
         time.sleep(_ERROR_BACKOFF_SECONDS)
         return False
 
+    idle_sleep_seconds = max(0.2, min(0.5, WAKE_IDLE_SLEEP_SECONDS))
     recognizer = KaldiRecognizer(model, WAKE_SAMPLE_RATE)
     recognizer.SetWords(False)
     wake_token = WAKE_WORD.strip()
@@ -165,21 +166,21 @@ def wait_for_wake_word() -> bool:
                     audio_chunk = audio_queue.get(timeout=WAKE_STREAM_READ_TIMEOUT_SECONDS)
                 except queue.Empty:
                     logger.debug("Wake stream timeout: no audio chunk available yet.")
-                    time.sleep(WAKE_IDLE_SLEEP_SECONDS)
+                    time.sleep(idle_sleep_seconds)
                     continue
 
                 has_final_result = recognizer.AcceptWaveform(audio_chunk)
                 if has_final_result:
                     final_text = _parse_result_text(recognizer.Result(), "text")
                     if WAKE_DEBUG_RESULTS:
-                        logger.info("Wake FINAL result: '%s'", final_text)
+                        logger.debug("Wake FINAL result: '%s'", final_text)
                     if _is_wake_detected(final_text, wake_token):
                         logger.info("Wake word detected from FINAL result.")
                         return True
                 else:
                     partial_text = _parse_result_text(recognizer.PartialResult(), "partial")
                     if WAKE_DEBUG_RESULTS and partial_text:
-                        logger.info("Wake PARTIAL result: '%s'", partial_text)
+                        logger.debug("Wake PARTIAL result: '%s'", partial_text)
                     if _is_wake_detected(partial_text, wake_token):
                         logger.info("Wake word detected from PARTIAL result.")
                         return True

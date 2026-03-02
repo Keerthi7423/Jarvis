@@ -55,6 +55,19 @@ SUCCESS_MESSAGE = "Done."
 UNKNOWN_COMMAND_MESSAGE = "I do not know that command yet."
 
 # ============================================================================
+# ASSISTANT LOOP FLOW SETTINGS
+# ============================================================================
+
+# Cooldown after a wake cycle completes to avoid immediate retrigger.
+ASSISTANT_WAKE_COOLDOWN_SECONDS = float(os.getenv("ASSISTANT_WAKE_COOLDOWN_SECONDS", "1.5"))
+
+# Idle sleep used by the main loop when waiting/retrying to keep CPU usage low.
+ASSISTANT_IDLE_SLEEP_SECONDS = float(os.getenv("ASSISTANT_IDLE_SLEEP_SECONDS", "0.25"))
+
+# Short handoff pause between speech completion and microphone listening.
+ASSISTANT_LISTEN_HANDOFF_SECONDS = float(os.getenv("ASSISTANT_LISTEN_HANDOFF_SECONDS", "0.2"))
+
+# ============================================================================
 # EXIT COMMAND VARIATIONS (For graceful shutdown)
 # ============================================================================
 
