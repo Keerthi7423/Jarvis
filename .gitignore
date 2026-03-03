@@ -6,3 +6,6 @@ __pycache__/
 # OS
 .DS_Store
 Thumbs.db
+**/node_modules/
+desktop-ui/dist/
+jarvis-ui/renderer/dist/
