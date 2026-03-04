@@ -1,4 +1,4 @@
-﻿{
+{
   "name": "jarvis-ui",
   "version": "0.1.0",
   "private": true,
@@ -14,8 +14,11 @@
   },
   "devDependencies": {
     "@vitejs/plugin-react": "^4.7.0",
+    "autoprefixer": "^10.4.27",
     "concurrently": "^9.2.1",
     "electron": "^38.1.2",
+    "postcss": "^8.5.8",
+    "tailwindcss": "^3.4.19",
     "vite": "^7.1.3",
     "wait-on": "^8.0.3"
   }
