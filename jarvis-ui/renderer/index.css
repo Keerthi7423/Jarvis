@@ -1,0 +1,51 @@
+@import url('https://fonts.googleapis.com/css2?family=Orbitron:wght@400;500;700&family=Rajdhani:wght@400;500;600&display=swap');
+
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  html,
+  body,
+  #root {
+    @apply h-full w-full m-0 p-0 overflow-hidden;
+  }
+
+  body {
+    font-family: 'Rajdhani', system-ui, sans-serif;
+    background:
+      radial-gradient(circle at 50% 10%, rgba(51, 240, 255, 0.15), transparent 42%),
+      radial-gradient(circle at 78% 82%, rgba(61, 247, 162, 0.08), transparent 38%),
+      #040916;
+    color: #e8fbff;
+  }
+}
+
+@layer components {
+  .font-hud {
+    font-family: 'Orbitron', 'Rajdhani', system-ui, sans-serif;
+  }
+
+  .hud-panel {
+    @apply rounded-2xl border border-jarvis-line bg-jarvis-panel/80 backdrop-blur-xl shadow-panel;
+  }
+
+  .hud-grid-overlay {
+    background-image:
+      linear-gradient(rgba(141, 246, 255, 0.06) 1px, transparent 1px),
+      linear-gradient(90deg, rgba(141, 246, 255, 0.06) 1px, transparent 1px);
+    background-size: 48px 48px;
+  }
+
+  .waveform-shell {
+    @apply pointer-events-none rounded-full;
+  }
+
+  .waveform-canvas {
+    @apply h-full w-full rounded-full bg-transparent opacity-95 drop-shadow-[0_0_10px_rgba(51,240,255,0.45)];
+  }
+
+  .waveform-error {
+    text-shadow: 0 0 8px rgba(255, 94, 123, 0.45);
+  }
+}
