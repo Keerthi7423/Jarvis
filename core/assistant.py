@@ -16,6 +16,7 @@ from commands.system_commands import execute_command, is_exit_command
 from core.acknowledgements import get_command_ack, get_wake_ack
 from core.greetings import get_time_based_greeting
 from services.ai_service import ai_response, check_ai_fallback_health
+from services.ws_bridge import WebSocketBridge
 from utils.logger import get_logger
 from voice.listener import listen
 from voice.speaker import check_tts_backend_health, speak
@@ -32,10 +33,14 @@ class JarvisAssistant:
         self._idle_sleep_seconds = max(0.2, min(0.5, ASSISTANT_IDLE_SLEEP_SECONDS))
         self._listen_handoff_seconds = max(0.0, ASSISTANT_LISTEN_HANDOFF_SECONDS)
         self._next_wake_allowed_at = 0.0
+        self._ws_bridge = WebSocketBridge()
+        self._ws_bridge.start()
         logger.info("Jarvis Assistant initialized.")
 
-    def _safe_speak(self, message: str, mode: str = "normal") -> bool:
+    def _safe_speak(self, message: str, mode: str = "normal", publish_event: bool = True) -> bool:
         """Speak safely and report whether synthesis/playback succeeded."""
+        if publish_event:
+            self._ws_bridge.publish("response", message)
         try:
             ok = speak(message, mode=mode)
             if not ok:
@@ -88,6 +93,7 @@ class JarvisAssistant:
                     continue
 
                 logger.info("User input recognized: %s", user_text)
+                self._ws_bridge.publish("command", user_text)
 
                 if is_exit_command(user_text):
                     logger.info("Exit command detected, shutting down gracefully.")

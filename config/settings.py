@@ -124,3 +124,14 @@ OLLAMA_SYSTEM_PROMPT = (
     "You are Jarvis, a concise and helpful assistant. "
     "Respond briefly and clearly."
 )
+
+# ============================================================================
+# WEBSOCKET UI BRIDGE SETTINGS
+# ============================================================================
+
+# Enable backend event streaming to Electron React dashboard.
+WS_BRIDGE_ENABLED = os.getenv("WS_BRIDGE_ENABLED", "1").strip().lower() not in {"0", "false", "no"}
+
+# Bind host/port for websocket server consumed by renderer.
+WS_BRIDGE_HOST = os.getenv("WS_BRIDGE_HOST", "127.0.0.1").strip()
+WS_BRIDGE_PORT = int(os.getenv("WS_BRIDGE_PORT", "8765"))

@@ -1,18 +1,14 @@
 import { useEffect, useState } from 'react';
 import AICore from './components/AICore.jsx';
+import CommandFeed from './components/CommandFeed.jsx';
 import FeedPanel from './components/FeedPanel.jsx';
 import StatusIndicator from './components/StatusIndicator.jsx';
-
-const commandFeed = [
-  'Awaiting command input',
-  'Voice channel online',
-  'Navigation systems standby'
-];
+import SystemStats from './components/SystemStats.jsx';
 
 const responseFeed = [
   'Assistant initialized',
   'Cinematic shell loaded',
-  'Ready for backend bridge'
+  'Bridge events routed to live feed'
 ];
 
 export default function App() {
@@ -29,7 +25,7 @@ export default function App() {
       <div className="pointer-events-none absolute inset-0 bg-[radial-gradient(circle_at_center,rgba(51,240,255,0.08),transparent_52%),radial-gradient(circle_at_bottom,rgba(51,240,255,0.07),transparent_48%)]" />
 
       <aside className="z-10 h-[30%] min-h-[180px] p-3 sm:p-4 lg:h-auto lg:w-[24%] lg:min-w-[280px] lg:p-6">
-        <FeedPanel title="Command Feed" items={commandFeed} />
+        <CommandFeed />
       </aside>
 
       <section className="z-10 flex flex-1 animate-fadeUp flex-col items-center justify-center gap-5 px-5 py-3 sm:gap-7">
@@ -40,7 +36,14 @@ export default function App() {
       </section>
 
       <aside className="z-10 h-[30%] min-h-[180px] p-3 sm:p-4 lg:h-auto lg:w-[24%] lg:min-w-[280px] lg:p-6">
-        <FeedPanel title="Response Feed" items={responseFeed} />
+        <div className="flex h-full flex-col gap-4">
+          <div className="h-[42%] min-h-[145px]">
+            <SystemStats />
+          </div>
+          <div className="min-h-0 flex-1">
+            <FeedPanel title="Response Feed" items={responseFeed} />
+          </div>
+        </div>
       </aside>
     </main>
   );
