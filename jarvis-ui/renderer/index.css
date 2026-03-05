@@ -48,4 +48,108 @@
   .waveform-error {
     text-shadow: 0 0 8px rgba(255, 94, 123, 0.45);
   }
+
+  .command-feed-panel {
+    @apply flex h-full flex-col rounded-2xl border border-cyan-300/60 bg-slate-950/80 p-4 shadow-[0_0_22px_rgba(51,240,255,0.24)];
+  }
+
+  .command-feed-header {
+    @apply mb-3 flex items-center justify-between;
+  }
+
+  .command-feed-title {
+    @apply text-[11px] uppercase tracking-[0.28em] text-cyan-200;
+  }
+
+  .command-feed-status {
+    @apply rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em];
+  }
+
+  .feed-status-connected {
+    @apply border-cyan-300/70 text-cyan-200;
+  }
+
+  .feed-status-connecting {
+    @apply border-amber-300/70 text-amber-200;
+  }
+
+  .feed-status-disconnected {
+    @apply border-rose-300/70 text-rose-200;
+  }
+
+  .command-feed-list {
+    @apply flex-1 space-y-2 overflow-y-auto pr-1;
+  }
+
+  .command-feed-item {
+    @apply grid grid-cols-[58px_72px_1fr] gap-2 rounded-lg border border-cyan-300/25 bg-slate-900/55 px-2 py-1.5 font-mono text-[11px] text-slate-200;
+  }
+
+  .command-feed-command {
+    @apply border-cyan-300/40 text-cyan-100;
+  }
+
+  .command-feed-response {
+    @apply border-emerald-300/35 text-emerald-100;
+  }
+
+  .command-feed-system {
+    @apply border-slate-500/35 text-slate-300;
+  }
+
+  .command-feed-time {
+    @apply text-cyan-200/80;
+  }
+
+  .command-feed-type {
+    @apply uppercase text-cyan-100/85;
+  }
+
+  .command-feed-text {
+    @apply break-words text-slate-100;
+  }
+
+  .system-stats-panel {
+    @apply flex h-full flex-col rounded-2xl border border-cyan-300/60 bg-slate-950/70 p-4 shadow-[0_0_20px_rgba(51,240,255,0.22)];
+  }
+
+  .system-stats-header {
+    @apply mb-3 flex items-center justify-between;
+  }
+
+  .system-stats-title {
+    @apply text-[11px] uppercase tracking-[0.28em] text-cyan-200;
+  }
+
+  .system-stats-status {
+    @apply rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em];
+  }
+
+  .stats-status-connected {
+    @apply border-cyan-300/70 text-cyan-200;
+  }
+
+  .stats-status-connecting {
+    @apply border-amber-300/70 text-amber-200;
+  }
+
+  .stats-status-disconnected {
+    @apply border-rose-300/70 text-rose-200;
+  }
+
+  .system-stats-grid {
+    @apply flex flex-1 flex-col gap-2;
+  }
+
+  .system-stats-row {
+    @apply flex items-center justify-between rounded-lg border border-cyan-300/25 bg-slate-900/55 px-3 py-2;
+  }
+
+  .system-stats-label {
+    @apply font-hud text-[11px] uppercase tracking-[0.2em] text-cyan-200;
+  }
+
+  .system-stats-value {
+    @apply font-mono text-sm text-slate-100;
+  }
 }
