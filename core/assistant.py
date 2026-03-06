@@ -12,9 +12,10 @@ from config.settings import (
     SUCCESS_MESSAGE,
     UNKNOWN_COMMAND_MESSAGE,
 )
-from commands.system_commands import execute_command, is_exit_command
+from commands.system_commands import execute_command, is_exit_command, resolve_mode_command
 from core.acknowledgements import get_command_ack, get_wake_ack
 from core.greetings import get_time_based_greeting
+from core.mode_manager import get_mode, set_mode
 from services.ai_service import ai_response, check_ai_fallback_health
 from services.ws_bridge import WebSocketBridge
 from utils.logger import get_logger
@@ -35,6 +36,7 @@ class JarvisAssistant:
         self._next_wake_allowed_at = 0.0
         self._ws_bridge = WebSocketBridge()
         self._ws_bridge.start()
+        self._publish_mode_state()
         logger.info("Jarvis Assistant initialized.")
 
     def _safe_speak(self, message: str, mode: str = "normal", publish_event: bool = True) -> bool:
@@ -54,6 +56,28 @@ class JarvisAssistant:
         """Throttle wake re-arm to avoid immediate retriggers."""
         self._next_wake_allowed_at = time.monotonic() + self._wake_cooldown_seconds
 
+    def _publish_mode_state(self) -> None:
+        """Publish the current mode so the dashboard can stay synchronized."""
+        mode = get_mode()
+        self._ws_bridge.publish_state("mode", mode=mode)
+
+    def _handle_mode_command(self, requested_mode: str) -> bool:
+        """Apply a supported mode change and announce it."""
+        current_mode = get_mode()
+        if requested_mode == current_mode:
+            message = f"{requested_mode.capitalize()} mode already active."
+            logger.info("Mode command received for current mode: %s", requested_mode)
+            self._publish_mode_state()
+            self._safe_speak(message, mode="calm")
+            return True
+
+        new_mode = set_mode(requested_mode)
+        self._publish_mode_state()
+        confirmation = f"{new_mode.capitalize()} mode activated."
+        logger.info("Assistant mode changed: %s -> %s", current_mode, new_mode)
+        self._safe_speak(confirmation, mode="calm")
+        return True
+
     def run(self) -> int:
         """Run assistant loop forever until exit command or interrupt."""
         logger.info("Starting Jarvis voice assistant...")
@@ -69,6 +93,7 @@ class JarvisAssistant:
             logger.warning(ai_status)
         startup_greeting = get_time_based_greeting()
         self._safe_speak(startup_greeting, mode="greeting")
+        self._publish_mode_state()
 
         try:
             while True:
@@ -99,6 +124,12 @@ class JarvisAssistant:
                     logger.info("Exit command detected, shutting down gracefully.")
                     self._safe_speak(SHUTDOWN_MESSAGE)
                     return 0
+
+                requested_mode = resolve_mode_command(user_text)
+                if requested_mode:
+                    self._handle_mode_command(requested_mode)
+                    self._apply_wake_cooldown()
+                    continue
 
                 if execute_command(user_text):
                     logger.info("Command executed successfully.")

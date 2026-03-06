@@ -35,6 +35,7 @@ class WebSocketBridge:
         self._loop: asyncio.AbstractEventLoop | None = None
         self._thread: threading.Thread | None = None
         self._server = None
+        self._latest_state: dict[str, dict[str, Any]] = {}
 
     def start(self) -> None:
         """Start websocket server loop on a daemon thread."""
@@ -65,6 +66,21 @@ class WebSocketBridge:
         except Exception as exc:
             logger.debug("Could not queue websocket payload: %s", exc)
 
+    def publish_state(self, state_type: str, **payload: Any) -> None:
+        """Broadcast persistent state snapshots such as current mode."""
+        if not self._enabled:
+            return
+
+        message = {"type": state_type, **payload}
+        self._latest_state[state_type] = message
+        if self._loop is None or not self._loop.is_running():
+            return
+
+        try:
+            asyncio.run_coroutine_threadsafe(self._broadcast(message), self._loop)
+        except Exception as exc:
+            logger.debug("Could not queue websocket state payload: %s", exc)
+
     def _run_server(self) -> None:
         loop = asyncio.new_event_loop()
         self._loop = loop
@@ -87,6 +103,7 @@ class WebSocketBridge:
         self._clients.add(websocket)
         logger.info("Dashboard client connected (%d active).", len(self._clients))
         try:
+            await self._send_initial_state(websocket)
             async for _ in websocket:
                 # Server is broadcast-only for now; ignore inbound messages.
                 continue
@@ -95,6 +112,14 @@ class WebSocketBridge:
         finally:
             self._clients.discard(websocket)
             logger.info("Dashboard client disconnected (%d active).", len(self._clients))
+
+    async def _send_initial_state(self, websocket: WebSocketServerProtocol) -> None:
+        """Push the latest stateful payloads to a newly connected client."""
+        for payload in self._latest_state.values():
+            try:
+                await websocket.send(json.dumps(payload))
+            except Exception:
+                break
 
     async def _broadcast(self, payload: dict[str, Any]) -> None:
         if not self._clients:

@@ -42,6 +42,12 @@ COMMAND_MAP: dict[str, tuple[Sequence[str], ...]] = {
     "open visual studio code": VSCODE_CANDIDATES,
 }
 
+MODE_COMMAND_MAP: dict[str, str] = {
+    "activate study mode": "study",
+    "activate coding mode": "coding",
+    "return to normal mode": "normal",
+}
+
 _NOISE_WORDS = {
     "jarvis",
     "please",
@@ -125,6 +131,14 @@ def is_exit_command(text: str) -> bool:
     """
     command_text = _normalize_command_text(text)
     return command_text in {"exit", "quit", "shutdown", "close"}
+
+
+def resolve_mode_command(text: str) -> str | None:
+    """Return the requested assistant mode if the text is a mode command."""
+    command_text = _normalize_command_text(text)
+    if not command_text:
+        return None
+    return MODE_COMMAND_MAP.get(command_text)
 
 
 def execute_command(text: str) -> bool:
