@@ -14,10 +14,14 @@
   body {
     font-family: 'Rajdhani', system-ui, sans-serif;
     background:
-      radial-gradient(circle at 50% 10%, rgba(51, 240, 255, 0.15), transparent 42%),
-      radial-gradient(circle at 78% 82%, rgba(61, 247, 162, 0.08), transparent 38%),
+      radial-gradient(circle at 50% 10%, rgba(51, 240, 255, 0.14), transparent 42%),
+      radial-gradient(circle at 78% 82%, rgba(51, 240, 255, 0.05), transparent 38%),
       #040916;
     color: #e8fbff;
+  }
+
+  * {
+    box-sizing: border-box;
   }
 }
 
@@ -26,8 +30,13 @@
     font-family: 'Orbitron', 'Rajdhani', system-ui, sans-serif;
   }
 
+  .hud-transition {
+    transition: all 0.3s ease;
+  }
+
   .hud-panel {
-    @apply rounded-2xl border border-jarvis-line bg-jarvis-panel/80 backdrop-blur-xl shadow-panel;
+    @apply rounded-[1.75rem] border border-cyan-300/20 bg-jarvis-panel backdrop-blur-xl shadow-panel;
+    transition: all 0.3s ease;
   }
 
   .hud-grid-overlay {
@@ -37,12 +46,20 @@
     background-size: 48px 48px;
   }
 
+  .hud-radial-overlay {
+    background:
+      radial-gradient(circle at 50% 50%, rgba(51, 240, 255, 0.1), transparent 40%),
+      radial-gradient(circle at 18% 25%, rgba(51, 240, 255, 0.06), transparent 32%),
+      radial-gradient(circle at 82% 72%, rgba(51, 240, 255, 0.04), transparent 30%);
+  }
+
   .waveform-shell {
     @apply pointer-events-none rounded-full;
+    transition: all 0.3s ease;
   }
 
   .waveform-canvas {
-    @apply h-full w-full rounded-full bg-transparent opacity-95 drop-shadow-[0_0_10px_rgba(51,240,255,0.45)];
+    @apply h-full w-full rounded-full bg-transparent opacity-90 drop-shadow-[0_0_10px_rgba(51,240,255,0.32)];
   }
 
   .waveform-error {
@@ -50,19 +67,26 @@
   }
 
   .command-feed-panel {
-    @apply flex h-full flex-col rounded-2xl border border-cyan-300/60 bg-slate-950/80 p-4 shadow-[0_0_22px_rgba(51,240,255,0.24)];
+    @apply flex h-full min-h-0 flex-col rounded-[1.75rem] border border-cyan-300/20 bg-slate-950/70 p-4 shadow-glowSoft backdrop-blur-xl sm:p-5;
+    transition: all 0.3s ease;
   }
 
   .command-feed-header {
-    @apply mb-3 flex items-center justify-between;
+    @apply mb-3 flex items-center justify-between gap-3;
   }
 
   .command-feed-title {
-    @apply text-[11px] uppercase tracking-[0.28em] text-cyan-200;
+    @apply text-[10px] uppercase tracking-[0.26em] text-cyan-100/80 sm:text-[11px];
   }
 
   .command-feed-status {
-    @apply rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.16em];
+    @apply rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em];
+    transition: all 0.3s ease;
+  }
+
+  .command-feed-mode {
+    @apply inline-flex w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-hud text-[9px] uppercase tracking-[0.18em] text-cyan-100/80;
+    transition: all 0.3s ease;
   }
 
   .feed-status-connected {
@@ -82,47 +106,50 @@
   }
 
   .command-feed-item {
-    @apply grid grid-cols-[58px_72px_1fr] gap-2 rounded-lg border border-cyan-300/25 bg-slate-900/55 px-2 py-1.5 font-mono text-[11px] text-slate-200;
+    @apply grid grid-cols-[52px_62px_1fr] gap-2 rounded-xl border border-cyan-300/20 bg-slate-900/50 px-3 py-2 font-mono text-[10px] text-slate-200 sm:grid-cols-[56px_70px_1fr] sm:text-[11px];
+    transition: all 0.3s ease;
   }
 
   .command-feed-command {
-    @apply border-cyan-300/40 text-cyan-100;
+    @apply border-cyan-300/30 text-cyan-100;
   }
 
   .command-feed-response {
-    @apply border-emerald-300/35 text-emerald-100;
+    @apply border-cyan-300/20 text-cyan-50;
   }
 
   .command-feed-system {
-    @apply border-slate-500/35 text-slate-300;
+    @apply border-slate-500/30 text-slate-300;
   }
 
   .command-feed-time {
-    @apply text-cyan-200/80;
+    @apply text-cyan-200/70;
   }
 
   .command-feed-type {
-    @apply uppercase text-cyan-100/85;
+    @apply uppercase text-cyan-100/70;
   }
 
   .command-feed-text {
-    @apply break-words text-slate-100;
+    @apply break-words text-slate-100/90;
   }
 
   .system-stats-panel {
-    @apply flex h-full flex-col rounded-2xl border border-cyan-300/60 bg-slate-950/70 p-4 shadow-[0_0_20px_rgba(51,240,255,0.22)];
+    @apply flex h-full flex-col rounded-[1.75rem] border border-cyan-300/20 bg-slate-950/70 p-4 shadow-glowSoft backdrop-blur-xl sm:p-5;
+    transition: all 0.3s ease;
   }
 
   .system-stats-header {
-    @apply mb-3 flex items-center justify-between;
+    @apply mb-3 flex items-center justify-between gap-3;
   }
 
   .system-stats-title {
-    @apply text-[11px] uppercase tracking-[0.28em] text-cyan-200;
+    @apply text-[10px] uppercase tracking-[0.26em] text-cyan-100/80 sm:text-[11px];
   }
 
   .system-stats-status {
-    @apply rounded-full border px-2 py-0.5 font-mono text-[10px] uppercase tracking-[0.14em];
+    @apply rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em];
+    transition: all 0.3s ease;
   }
 
   .stats-status-connected {
@@ -138,18 +165,19 @@
   }
 
   .system-stats-grid {
-    @apply flex flex-1 flex-col gap-2;
+    @apply flex flex-1 flex-col gap-2.5;
   }
 
   .system-stats-row {
-    @apply flex items-center justify-between rounded-lg border border-cyan-300/25 bg-slate-900/55 px-3 py-2;
+    @apply flex items-center justify-between rounded-xl border border-cyan-300/20 bg-slate-900/50 px-3 py-2.5;
+    transition: all 0.3s ease;
   }
 
   .system-stats-label {
-    @apply font-hud text-[11px] uppercase tracking-[0.2em] text-cyan-200;
+    @apply font-hud text-[10px] uppercase tracking-[0.22em] text-cyan-100/70 sm:text-[11px];
   }
 
   .system-stats-value {
-    @apply font-mono text-sm text-slate-100;
+    @apply font-mono text-sm text-slate-100/90;
   }
 }

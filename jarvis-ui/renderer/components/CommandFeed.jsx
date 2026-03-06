@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 
 const WS_URL = import.meta.env.VITE_JARVIS_WS_URL || 'ws://127.0.0.1:8765';
 const MAX_HISTORY = 120;
@@ -11,11 +11,12 @@ function pushEvent(setter, next) {
   setter((prev) => [...prev.slice(-(MAX_HISTORY - 1)), next]);
 }
 
-export default function CommandFeed() {
+function CommandFeed() {
   const [events, setEvents] = useState([
     { id: 1, type: 'system', text: 'Waiting for backend bridge...', at: timeStamp() }
   ]);
   const [status, setStatus] = useState('connecting');
+  const [currentMode, setCurrentMode] = useState('normal');
   const listRef = useRef(null);
   const retryRef = useRef(null);
   const socketRef = useRef(null);
@@ -52,7 +53,26 @@ export default function CommandFeed() {
         }
         try {
           const payload = JSON.parse(event.data);
-          if (!payload || typeof payload.text !== 'string' || typeof payload.type !== 'string') {
+          if (!payload || typeof payload.type !== 'string') {
+            return;
+          }
+          if (payload.type === 'mode' && typeof payload.mode === 'string') {
+            setCurrentMode((prev) => {
+              const nextMode = payload.mode.trim().toLowerCase();
+              if (!nextMode || prev === nextMode) {
+                return prev;
+              }
+              pushEvent(setEvents, {
+                id: nextIdRef.current++,
+                type: 'system',
+                text: `${nextMode.toUpperCase()} mode active`,
+                at: timeStamp()
+              });
+              return nextMode;
+            });
+            return;
+          }
+          if (typeof payload.text !== 'string') {
             return;
           }
           if (payload.type !== 'command' && payload.type !== 'response') {
@@ -118,7 +138,10 @@ export default function CommandFeed() {
   return (
     <section className="command-feed-panel">
       <header className="command-feed-header">
-        <h2 className="font-hud command-feed-title">Command Feed</h2>
+        <div className="flex min-w-0 flex-col gap-2">
+          <h2 className="font-hud command-feed-title">Command Feed</h2>
+          <span className="command-feed-mode">Mode: {currentMode}</span>
+        </div>
         <span className={`command-feed-status ${statusClass}`}>{status}</span>
       </header>
 
@@ -134,3 +157,5 @@ export default function CommandFeed() {
     </section>
   );
 }
+
+export default memo(CommandFeed);
