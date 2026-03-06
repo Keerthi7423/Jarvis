@@ -1,8 +1,8 @@
-import { useEffect, useMemo, useRef, useState } from 'react';
+import { memo, useEffect, useMemo, useRef, useState } from 'react';
 
 const WS_URL = import.meta.env.VITE_JARVIS_WS_URL || 'ws://127.0.0.1:8765';
 
-export default function SystemStats() {
+function SystemStats() {
   const [stats, setStats] = useState({ cpu: 0, ram: 0, network: 0 });
   const [status, setStatus] = useState('connecting');
   const retryRef = useRef(null);
@@ -106,3 +106,5 @@ export default function SystemStats() {
     </section>
   );
 }
+
+export default memo(SystemStats);
