@@ -1,4 +1,5 @@
 ﻿"""System command execution layer for Jarvis voice actions.
+# Pyre reload
 
 This module:
 1. Maps voice commands to executable paths
@@ -18,7 +19,7 @@ import re
 import subprocess
 from typing import Sequence
 
-from utils.logger import get_logger
+from utils.logger import get_logger  # pyre-ignore
 
 logger = get_logger("jarvis.system_commands")
 
@@ -35,11 +36,28 @@ VSCODE_CANDIDATES: tuple[Sequence[str], ...] = (
     ("C:\\Users\\intel\\AppData\\Local\\Programs\\Microsoft VS Code\\Code.exe",),
 )
 
+TERMINAL_CANDIDATES: tuple[Sequence[str], ...] = (
+    ("wt",),
+    ("powershell",),
+    ("cmd",),
+)
+
+EXPLORER_CANDIDATES: tuple[Sequence[str], ...] = (
+    ("explorer", "."),
+)
+
+STUDY_CANDIDATES: tuple[Sequence[str], ...] = (
+    ("explorer", "Documents"),
+)
+
 
 COMMAND_MAP: dict[str, tuple[Sequence[str], ...]] = {
     "open chrome": CHROME_CANDIDATES,
     "open vs code": VSCODE_CANDIDATES,
     "open visual studio code": VSCODE_CANDIDATES,
+    "open terminal": TERMINAL_CANDIDATES,
+    "open project folder": EXPLORER_CANDIDATES,
+    "open study materials": STUDY_CANDIDATES,
 }
 
 MODE_COMMAND_MAP: dict[str, str] = {
@@ -165,9 +183,15 @@ def execute_command(text: str) -> bool:
         logger.info("Unknown command after normalization: %s", command_text)
         return False
 
-    success = _launch_first_available(candidates)
-    if success:
-        logger.info("Command executed successfully: %s", command_text)
-    else:
-        logger.warning("Command recognized but no executable was launched: %s", command_text)
-    return success
+    try:
+        success = _launch_first_available(candidates)
+        if success:
+            logger.info("Command executed successfully: %s", command_text)
+            return True
+        else:
+            logger.warning("Command recognized but no executable was launched: %s", command_text)
+            raise RuntimeError(f"Execution failed for {command_text}")
+    except Exception as exc:
+        from core.error_handler import handle_error
+        msg = handle_error(exc, f"Command execution failed: {text}")
+        raise RuntimeError(msg)

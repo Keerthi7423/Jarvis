@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import time
 
-from config.settings import (
+from config.settings import (  # pyre-ignore
     ASSISTANT_IDLE_SLEEP_SECONDS,
     ASSISTANT_LISTEN_HANDOFF_SECONDS,
     ASSISTANT_WAKE_COOLDOWN_SECONDS,
@@ -12,16 +12,19 @@ from config.settings import (
     SUCCESS_MESSAGE,
     UNKNOWN_COMMAND_MESSAGE,
 )
-from commands.system_commands import execute_command, is_exit_command, resolve_mode_command
-from core.acknowledgements import get_command_ack, get_wake_ack
-from core.greetings import get_time_based_greeting
-from core.mode_manager import get_mode, set_mode
-from services.ai_service import ai_response, check_ai_fallback_health
-from services.ws_bridge import WebSocketBridge
-from utils.logger import get_logger
-from voice.listener import listen
-from voice.speaker import check_tts_backend_health, speak
-from wakeword.wake_engine import wait_for_wake_word
+from commands.system_commands import _normalize_command_text, execute_command, is_exit_command, resolve_mode_command  # pyre-ignore
+from commands.workflows import execute_workflow, get_workflow_success_message, resolve_workflow  # pyre-ignore
+from core.acknowledgements import get_command_ack, get_wake_ack  # pyre-ignore
+from core.event_monitor import start_event_monitor  # pyre-ignore
+from core.greetings import get_time_based_greeting  # pyre-ignore
+from core.mode_manager import get_mode, set_mode  # pyre-ignore
+from core.plugin_loader import execute_plugin_command, load_plugins  # pyre-ignore
+from services.ai_service import ai_response, check_ai_fallback_health  # pyre-ignore
+from services.ws_bridge import WebSocketBridge  # pyre-ignore
+from utils.logger import get_logger  # pyre-ignore
+from voice.listener import listen  # pyre-ignore
+from voice.speaker import check_tts_backend_health, speak  # pyre-ignore
+from wakeword.wake_engine import wait_for_wake_word  # pyre-ignore
 
 logger = get_logger("jarvis.assistant")
 
@@ -81,6 +84,11 @@ class JarvisAssistant:
     def run(self) -> int:
         """Run assistant loop forever until exit command or interrupt."""
         logger.info("Starting Jarvis voice assistant...")
+
+        start_event_monitor(lambda msg: self._safe_speak(msg, mode="urgent"))
+        
+        load_plugins()
+
         tts_ready, tts_status = check_tts_backend_health()
         if tts_ready:
             logger.info(tts_status)
@@ -131,17 +139,41 @@ class JarvisAssistant:
                     self._apply_wake_cooldown()
                     continue
 
-                if execute_command(user_text):
-                    logger.info("Command executed successfully.")
-                    if not self._safe_speak(get_command_ack(), mode="calm"):
-                        self._safe_speak(SUCCESS_MESSAGE, mode="calm")
-                else:
-                    logger.info("Command not recognized: %s", user_text)
-                    fallback_text = ai_response(user_text)
-                    if fallback_text:
-                        self._safe_speak(fallback_text)
+                try:
+                    command_text = _normalize_command_text(user_text)
+                    workflow_name = resolve_workflow(command_text)
+                    if workflow_name:
+                        if execute_workflow(workflow_name, execute_command):
+                            success_message = get_workflow_success_message(workflow_name)
+                            self._safe_speak(success_message, mode="calm")
+                        else:
+                            self._safe_speak("Workflow execution failed.", mode="calm")
+                        self._apply_wake_cooldown()
+                        continue
+
+                    plugin_handled, plugin_response = execute_plugin_command(command_text)
+                    if plugin_handled:
+                        if plugin_response:
+                            self._safe_speak(plugin_response, mode="calm")
+                        else:
+                            if not self._safe_speak(get_command_ack(), mode="calm"):
+                                self._safe_speak(SUCCESS_MESSAGE, mode="calm")
+                        self._apply_wake_cooldown()
+                        continue
+
+                    if execute_command(user_text):
+                        logger.info("Command executed successfully.")
+                        if not self._safe_speak(get_command_ack(), mode="calm"):
+                            self._safe_speak(SUCCESS_MESSAGE, mode="calm")
                     else:
-                        self._safe_speak(UNKNOWN_COMMAND_MESSAGE)
+                        logger.info("Command not recognized: %s", user_text)
+                        fallback_text = ai_response(user_text)
+                        if fallback_text:
+                            self._safe_speak(fallback_text)
+                        else:
+                            self._safe_speak(UNKNOWN_COMMAND_MESSAGE)
+                except RuntimeError as exc:
+                    self._safe_speak(str(exc), mode="calm")
 
                 self._apply_wake_cooldown()
 
@@ -152,3 +184,5 @@ class JarvisAssistant:
         except Exception as exc:
             logger.error("Unexpected error in main loop: %s", exc, exc_info=True)
             return 1
+            
+        return 0

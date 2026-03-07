@@ -1,0 +1,6 @@
+[tool.pyre]
+source_directories = ["."]
+
+[tool.pyright]
+include = ["."]
+extraPaths = ["."]

@@ -77,17 +77,21 @@ def listen() -> str | None:
             return None
 
         except sr.RequestError as exc:
-            logger.error("Speech recognition service error (likely internet): %s", exc)
+            from core.error_handler import handle_error
+            handle_error(exc, "Speech recognition service error (likely internet)")
             return None
 
     except FileNotFoundError as exc:
-        logger.error("Microphone device not found: %s", exc)
+        from core.error_handler import handle_error
+        handle_error(exc, "Microphone device not found")
         return None
 
     except OSError as exc:
-        logger.error("System error accessing microphone: %s", exc)
+        from core.error_handler import handle_error
+        handle_error(exc, "System error accessing microphone")
         return None
 
     except Exception as exc:
-        logger.error("Unexpected listener error: %s", exc, exc_info=True)
+        from core.error_handler import handle_error
+        handle_error(exc, "Unexpected listener error")
         return None
