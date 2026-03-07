@@ -1,67 +1,206 @@
-JARVIS — AI DESKTOP ASSISTANT
+# JARVIS — AI Desktop Assistant
 
-Jarvis is a movie-style AI desktop assistant that combines a Python voice engine with a futuristic Electron + React dashboard.
+Jarvis is a **movie-style AI desktop assistant** combining a **Python voice engine** with a **futuristic Electron + React dashboard**.
 
-The goal of this project is to build a production-grade AI assistant that runs locally and provides real-time visual interaction.
+The goal of this project is to build a **production-grade AI assistant** that runs locally, executes voice commands, automates workflows, and provides a **real-time visual interface**.
 
 ---
 
-FEATURES
+# 🚀 Features
 
-Voice Intelligence (Python)
+## Voice Intelligence (Python)
 
-* Wake word detection using Vosk
+* Wake word detection using **Vosk**
 * Speech recognition
 * Command execution system
-* Context modes (Normal / Study / Coding)
-* Modular command architecture
-
-Desktop Dashboard (Electron + React)
-
-* Iron-Man style futuristic UI
-* Neon dark theme using Tailwind CSS
-* Real-time microphone waveform animation
-* Command feed showing what Jarvis heard
-* System telemetry panel (CPU, RAM, Network)
-
-Backend ↔ UI Integration
-
-* WebSocket communication
-* Real-time event streaming from Python to UI
-* Live updates in dashboard
+* Context modes: **Normal / Study / Coding**
+* Multi-step workflow automation
+* Centralized error handling
+* Proactive system monitoring
 
 ---
 
-ARCHITECTURE
+## Futuristic Desktop Dashboard
 
-Jarvis Core (Python)
+Built with **Electron + React + Tailwind CSS**
 
-Wake Word Engine
+* Iron-Man style UI
+* Neon dark theme
+* Real-time microphone waveform
+* Command feed panel
+* System telemetry panel
+  CPU usage
+  RAM usage
+  Network activity
+
+---
+
+## Automation & Intelligence
+
+* Multi-step workflow commands
+* Context aware modes
+* Plugin architecture
+* Event monitoring system
+
+Example workflow:
+
+User:
+Jarvis prepare coding environment
+
+Jarvis will automatically:
+
+* Open VS Code
+* Open terminal
+* Load project workspace
+
+---
+
+# 🧩 System Architecture
+
+```
+                    +----------------------+
+                    |     User Voice       |
+                    +----------+-----------+
+                               |
+                               v
+                     +-------------------+
+                     | Wake Word Engine  |
+                     |      (Vosk)       |
+                     +---------+---------+
+                               |
+                               v
+                     +-------------------+
+                     | Speech Recognition|
+                     +---------+---------+
+                               |
+                               v
+                     +-------------------+
+                     |   Command Router  |
+                     +---------+---------+
+                               |
+        +----------------------+----------------------+
+        |                      |                      |
+        v                      v                      v
++---------------+     +----------------+     +----------------+
+| Workflow      |     | Mode Manager   |     | Plugin Loader  |
+| Automation    |     | (study/coding) |     | (extensions)   |
++-------+-------+     +--------+-------+     +--------+-------+
+        |                      |                      |
+        +-----------+----------+----------+-----------+
+                    |                     |
+                    v                     v
+           +---------------+     +-------------------+
+           | Error Handler |     | Event Monitor     |
+           | (Reliability) |     | (Proactive alerts)|
+           +-------+-------+     +---------+---------+
+                   |                       |
+                   v                       v
+            +--------------------------------------+
+            |       WebSocket Communication        |
+            +------------------+-------------------+
+                               |
+                               v
+                   +-----------------------------+
+                   |   Electron Desktop Shell    |
+                   +-------------+---------------+
+                                 |
+                                 v
+                   +-----------------------------+
+                   |       React Dashboard       |
+                   |                             |
+                   |  AI Core Animation          |
+                   |  Mic Waveform               |
+                   |  Command Feed               |
+                   |  System Stats Panel         |
+                   +-----------------------------+
+```
+
+---
+
+# 🔁 Command Processing Flow
+
+```
+User Voice
+    |
+    v
+Wake Word Detected
+    |
+    v
 Speech Recognition
-Command System
-Mode Manager
-WebSocket Server
-
+    |
+    v
+Command Parsing
+    |
+    v
+Is Command a Workflow?
+    |            |
+   Yes           No
+    |             |
+    v             v
+Execute Steps   Execute Single Command
+    |
+    v
+Send Result
+    |
+    v
+Update Dashboard + Speak Response
 ```
-    ↓
-```
-
-Electron Desktop Shell
-
-```
-    ↓
-```
-
-React Dashboard
-
-AI Core Animation
-Waveform Visualization
-Command Feed
-System Stats
 
 ---
 
-TECH STACK
+# 🔄 Proactive Monitoring Flow
+
+```
+Event Monitor Thread
+        |
+        v
+Check System Metrics
+(CPU / RAM / Network)
+        |
+        v
+Threshold Exceeded?
+     |        |
+    No       Yes
+     |        |
+     v        v
+  Wait      Trigger Alert
+               |
+               v
+        Send Notification
+               |
+               v
+     Jarvis Speaks Warning
+               |
+               v
+       Update Dashboard
+```
+
+---
+
+# 🧩 Plugin System Flow
+
+```
+Jarvis Startup
+      |
+      v
+Scan plugins/ directory
+      |
+      v
+Load Plugin Modules
+      |
+      v
+Call register() function
+      |
+      v
+Add Plugin Commands
+      |
+      v
+Command Router can execute plugin commands
+```
+
+---
+
+# 🛠 Tech Stack
 
 Backend
 Python
@@ -78,70 +217,92 @@ Web Audio API
 
 ---
 
-PROJECT STRUCTURE
+# 📂 Project Structure
 
+```
 jarvis/
 
 core/
 commands/
+plugins/
 wakeword/
 voice/
 websocket/
 
 ui/
-electron/
-react/
-components/
+   electron/
+   react/
+   components/
 
 main.py
+```
 
 ---
 
-GETTING STARTED
+# ⚡ Getting Started
 
-1. Clone repository
+Clone repository
 
+```
 git clone https://github.com/Keerthi7423/jarvis.git
-
 cd jarvis
+```
 
-2. Install Python dependencies
+Install Python dependencies
 
+```
 pip install -r requirements.txt
+```
 
-3. Start Jarvis backend
+Run backend
 
+```
 python main.py
+```
 
-4. Start UI
+Run dashboard
 
+```
 cd ui
 npm install
 npm start
+```
 
 ---
 
-CONTRIBUTING
+# 🤝 Contributing
 
 Contributions are welcome.
 
 You can help by:
 
-* Improving architecture
-* Enhancing UI/UX
-* Adding new voice commands
-* Optimizing Python ↔ Electron communication
-* Fixing bugs
+* improving architecture
+* adding plugins
+* improving UI
+* optimizing performance
+* adding automation workflows
 
-Steps to contribute:
+Steps:
 
-1. Fork the repository
-2. Create a feature branch
-3. Submit a Pull Request
+1 Fork repository
+2 Create feature branch
+3 Submit Pull Request
 
 ---
 
-AUTHOR
+# 📌 Roadmap
+
+Upcoming features
+
+* AI chat mode
+* smart home automation
+* mobile companion app
+* advanced workflow automation
+* cloud integration
+
+---
+
+# 👨‍💻 Author
 
 Keerthi Kumar
 
@@ -150,4 +311,4 @@ https://github.com/Keerthi7423
 
 ---
 
-If you like this project, please give it a star ⭐
+⭐ If you like this project, consider giving it a star.
