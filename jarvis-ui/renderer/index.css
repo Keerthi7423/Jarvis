@@ -5,6 +5,12 @@
 @tailwind utilities;
 
 @layer base {
+  :root {
+    --jarvis-cyan: #33f0ff;
+    --jarvis-cyan-rgb: 51, 240, 255;
+    --jarvis-bg: #040916;
+  }
+
   html,
   body,
   #root {
@@ -14,9 +20,9 @@
   body {
     font-family: 'Rajdhani', system-ui, sans-serif;
     background:
-      radial-gradient(circle at 50% 10%, rgba(51, 240, 255, 0.14), transparent 42%),
-      radial-gradient(circle at 78% 82%, rgba(51, 240, 255, 0.05), transparent 38%),
-      #040916;
+      radial-gradient(circle at 50% 10%, rgba(var(--jarvis-cyan-rgb), 0.14), transparent 42%),
+      radial-gradient(circle at 78% 82%, rgba(var(--jarvis-cyan-rgb), 0.05), transparent 38%),
+      var(--jarvis-bg);
     color: #e8fbff;
   }
 
@@ -35,7 +41,7 @@
   }
 
   .hud-panel {
-    @apply rounded-[1.75rem] border border-cyan-300/20 bg-jarvis-panel backdrop-blur-xl shadow-panel;
+    @apply rounded-[1.75rem] border border-cyan-300/20 bg-slate-950/70 backdrop-blur-xl;
     transition: all 0.3s ease;
   }
 
@@ -48,9 +54,9 @@
 
   .hud-radial-overlay {
     background:
-      radial-gradient(circle at 50% 50%, rgba(51, 240, 255, 0.1), transparent 40%),
-      radial-gradient(circle at 18% 25%, rgba(51, 240, 255, 0.06), transparent 32%),
-      radial-gradient(circle at 82% 72%, rgba(51, 240, 255, 0.04), transparent 30%);
+      radial-gradient(circle at 50% 50%, rgba(var(--jarvis-cyan-rgb), 0.1), transparent 40%),
+      radial-gradient(circle at 18% 25%, rgba(var(--jarvis-cyan-rgb), 0.06), transparent 32%),
+      radial-gradient(circle at 82% 72%, rgba(var(--jarvis-cyan-rgb), 0.04), transparent 30%);
   }
 
   .waveform-shell {
@@ -59,7 +65,8 @@
   }
 
   .waveform-canvas {
-    @apply h-full w-full rounded-full bg-transparent opacity-90 drop-shadow-[0_0_10px_rgba(51,240,255,0.32)];
+    @apply h-full w-full rounded-full bg-transparent opacity-90;
+    filter: drop-shadow(0 0 10px rgba(var(--jarvis-cyan-rgb), 0.32));
   }
 
   .waveform-error {
@@ -67,117 +74,122 @@
   }
 
   .command-feed-panel {
-    @apply flex h-full min-h-0 flex-col rounded-[1.75rem] border border-cyan-300/20 bg-slate-950/70 p-4 shadow-glowSoft backdrop-blur-xl sm:p-5;
+    @apply flex h-full min-h-0 flex-col rounded-[2.2rem] border border-cyan-500/20 bg-slate-950/40 backdrop-blur-3xl p-4 sm:p-5;
     transition: all 0.3s ease;
   }
 
-  .command-feed-header {
-    @apply mb-3 flex items-center justify-between gap-3;
+  .glass-morphism {
+    @apply border border-cyan-500/20 bg-slate-950/20 backdrop-blur-2xl;
+    box-shadow: 0 8px 32px 0 rgba(0, 0, 0, 0.8);
   }
 
-  .command-feed-title {
-    @apply text-[10px] uppercase tracking-[0.26em] text-cyan-100/80 sm:text-[11px];
+  .drop-shadow-glow {
+    filter: drop-shadow(0 0 12px rgba(var(--jarvis-cyan-rgb), 0.8));
   }
 
-  .command-feed-status {
-    @apply rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.16em];
-    transition: all 0.3s ease;
+  .animate-spin-slow {
+    animation: spin 8s linear infinite;
   }
 
-  .command-feed-mode {
-    @apply inline-flex w-fit rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-hud text-[9px] uppercase tracking-[0.18em] text-cyan-100/80;
-    transition: all 0.3s ease;
+  .animate-spin-reverse {
+    animation: spin-reverse 10s linear infinite;
+  }
+}
+
+@layer utilities {
+  .animate-pulse-slow {
+    animation: pulse 4s cubic-bezier(0.4, 0, 0.6, 1) infinite;
   }
 
-  .feed-status-connected {
-    @apply border-cyan-300/70 text-cyan-200;
+  .animate-glow-pulse {
+    animation: glow-pulse 2s ease-in-out infinite alternate;
   }
 
-  .feed-status-connecting {
-    @apply border-amber-300/70 text-amber-200;
+  .animate-scan {
+    animation: scan 3s ease-in-out infinite;
   }
 
-  .feed-status-disconnected {
-    @apply border-rose-300/70 text-rose-200;
+  .animate-boot-text {
+    animation: boot-text 2s steps(40, end);
   }
 
-  .command-feed-list {
-    @apply flex-1 space-y-2 overflow-y-auto pr-1;
+  .animate-glitch {
+    animation: glitch 0.3s cubic-bezier(0.25, 0.46, 0.45, 0.94) both infinite;
   }
 
-  .command-feed-item {
-    @apply grid grid-cols-[52px_62px_1fr] gap-2 rounded-xl border border-cyan-300/20 bg-slate-900/50 px-3 py-2 font-mono text-[10px] text-slate-200 sm:grid-cols-[56px_70px_1fr] sm:text-[11px];
-    transition: all 0.3s ease;
+  .shadow-glow-cyan {
+    box-shadow: 0 0 20px rgba(var(--jarvis-cyan-rgb), 0.4), inset 0 0 12px rgba(var(--jarvis-cyan-rgb), 0.2);
+  }
+}
+
+@keyframes spin-reverse {
+  from {
+    transform: rotate(360deg);
   }
 
-  .command-feed-command {
-    @apply border-cyan-300/30 text-cyan-100;
+  to {
+    transform: rotate(0deg);
+  }
+}
+
+@keyframes glow-pulse {
+  from {
+    filter: drop-shadow(0 0 4px rgba(var(--jarvis-cyan-rgb), 0.5));
   }
 
-  .command-feed-response {
-    @apply border-cyan-300/20 text-cyan-50;
+  to {
+    filter: drop-shadow(0 0 15px rgba(var(--jarvis-cyan-rgb), 0.8));
+  }
+}
+
+@keyframes scan {
+  0% {
+    transform: translateY(-100%);
+    opacity: 0;
   }
 
-  .command-feed-system {
-    @apply border-slate-500/30 text-slate-300;
+  50% {
+    opacity: 0.5;
   }
 
-  .command-feed-time {
-    @apply text-cyan-200/70;
+  100% {
+    transform: translateY(100%);
+    opacity: 0;
+  }
+}
+
+@keyframes core-pulse {
+
+  0%,
+  100% {
+    transform: scale(1);
+    opacity: 0.8;
   }
 
-  .command-feed-type {
-    @apply uppercase text-cyan-100/70;
+  50% {
+    transform: scale(1.05);
+    opacity: 1;
   }
+}
 
-  .command-feed-text {
-    @apply break-words text-slate-100/90;
-  }
+.animate-corePulse {
+  animation: core-pulse 2s ease-in-out infinite;
+}
 
-  .system-stats-panel {
-    @apply flex h-full flex-col rounded-[1.75rem] border border-cyan-300/20 bg-slate-950/70 p-4 shadow-glowSoft backdrop-blur-xl sm:p-5;
-    transition: all 0.3s ease;
-  }
+.jarvis-hologram {
+  position: relative;
+  overflow: hidden;
+}
 
-  .system-stats-header {
-    @apply mb-3 flex items-center justify-between gap-3;
-  }
-
-  .system-stats-title {
-    @apply text-[10px] uppercase tracking-[0.26em] text-cyan-100/80 sm:text-[11px];
-  }
-
-  .system-stats-status {
-    @apply rounded-full border border-cyan-300/20 bg-cyan-300/10 px-2.5 py-1 font-mono text-[9px] uppercase tracking-[0.14em];
-    transition: all 0.3s ease;
-  }
-
-  .stats-status-connected {
-    @apply border-cyan-300/70 text-cyan-200;
-  }
-
-  .stats-status-connecting {
-    @apply border-amber-300/70 text-amber-200;
-  }
-
-  .stats-status-disconnected {
-    @apply border-rose-300/70 text-rose-200;
-  }
-
-  .system-stats-grid {
-    @apply flex flex-1 flex-col gap-2.5;
-  }
-
-  .system-stats-row {
-    @apply flex items-center justify-between rounded-xl border border-cyan-300/20 bg-slate-900/50 px-3 py-2.5;
-    transition: all 0.3s ease;
-  }
-
-  .system-stats-label {
-    @apply font-hud text-[10px] uppercase tracking-[0.22em] text-cyan-100/70 sm:text-[11px];
-  }
-
-  .system-stats-value {
-    @apply font-mono text-sm text-slate-100/90;
-  }
+.jarvis-hologram::before {
+  content: "";
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: 100%;
+  height: 100%;
+  background: linear-gradient(transparent 0%, rgba(var(--jarvis-cyan-rgb), 0.05) 50%, transparent 100%);
+  background-size: 100% 4px;
+  pointer-events: none;
+  z-index: 10;
 }

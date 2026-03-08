@@ -5,16 +5,15 @@ from __future__ import annotations
 import threading
 from pathlib import Path
 
-import pyttsx3
-
-from config.settings import (
+import pyttsx3  # pyre-ignore
+from config.settings import (  # pyre-ignore
     AUDIO_CACHE_DIR,
     COQUI_MODEL_PATH,
     ELEVENLABS_API_KEY,
     SPEECH_RATE,
     TTS_BACKEND,
 )
-from utils.logger import get_logger
+from utils.logger import get_logger  # pyre-ignore
 from voice.ai_speaker import speak_with_ai
 
 logger = get_logger("jarvis.speaker")
@@ -31,7 +30,7 @@ def _select_voice(engine: pyttsx3.Engine) -> None:
         logger.warning("No TTS voices reported by fallback engine; using defaults.")
         return
 
-    preferred_tokens = ("zira", "hazel", "susan", "aria", "samantha", "female")
+    preferred_tokens = ("david", "george", "james", "british", "uk", "male", "microsoft hazel")
     fallback_voice_id = voices[0].id
 
     for voice in voices:
@@ -42,7 +41,7 @@ def _select_voice(engine: pyttsx3.Engine) -> None:
             return
 
     engine.setProperty("voice", fallback_voice_id)
-    logger.info("Fallback TTS voice selected: %s", voices[0].name)
+    logger.info("Fallback TTS voice selected: %s", voices[0].name)  # pyre-ignore
 
 
 def _get_engine() -> pyttsx3.Engine:

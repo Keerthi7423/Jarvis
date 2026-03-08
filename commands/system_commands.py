@@ -19,6 +19,7 @@ import re
 import subprocess
 from typing import Sequence
 
+from core.error_handler import handle_error  # pyre-ignore
 from utils.logger import get_logger  # pyre-ignore
 
 logger = get_logger("jarvis.system_commands")
@@ -64,6 +65,8 @@ MODE_COMMAND_MAP: dict[str, str] = {
     "activate study mode": "study",
     "activate coding mode": "coding",
     "return to normal mode": "normal",
+    "enter chat mode": "chat",
+    "exit chat mode": "normal",
 }
 
 _NOISE_WORDS = {
@@ -192,6 +195,5 @@ def execute_command(text: str) -> bool:
             logger.warning("Command recognized but no executable was launched: %s", command_text)
             raise RuntimeError(f"Execution failed for {command_text}")
     except Exception as exc:
-        from core.error_handler import handle_error
         msg = handle_error(exc, f"Command execution failed: {text}")
         raise RuntimeError(msg)

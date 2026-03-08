@@ -50,38 +50,50 @@ export default function Waveform() {
       const height = canvas.clientHeight;
       const cx = width / 2;
       const cy = height / 2;
-      const radius = Math.min(width, height) * 0.34;
+      const radius = Math.min(width, height) * 0.35;
       const bins = dataArray.length;
 
       analyser.getByteFrequencyData(dataArray);
       ctx.clearRect(0, 0, width, height);
 
+      // Inner constant ring
       ctx.beginPath();
-      ctx.arc(cx, cy, radius, 0, Math.PI * 2);
-      ctx.strokeStyle = NEON_SOFT;
-      ctx.lineWidth = 1.2;
-      ctx.shadowColor = 'rgba(51, 240, 255, 0.45)';
-      ctx.shadowBlur = 10;
+      ctx.arc(cx, cy, radius - 4, 0, Math.PI * 2);
+      ctx.strokeStyle = 'rgba(51, 240, 255, 0.15)';
+      ctx.lineWidth = 1;
       ctx.stroke();
 
       for (let i = 0; i < bins; i += 2) {
         const value = dataArray[i] / 255;
         const angle = (i / bins) * Math.PI * 2;
-        const inner = radius + 6;
-        const outer = inner + value * 32;
+
+        // Dynamic bar length
+        const inner = radius + 4;
+        const outer = inner + (value * 35) + (Math.sin(Date.now() / 1000 + i) * 2);
+
         const x1 = cx + Math.cos(angle) * inner;
         const y1 = cy + Math.sin(angle) * inner;
         const x2 = cx + Math.cos(angle) * outer;
         const y2 = cy + Math.sin(angle) * outer;
 
+        // Draw bar
         ctx.beginPath();
         ctx.moveTo(x1, y1);
         ctx.lineTo(x2, y2);
-        ctx.strokeStyle = NEON;
-        ctx.lineWidth = 1.5;
-        ctx.shadowColor = 'rgba(51, 240, 255, 0.9)';
-        ctx.shadowBlur = 14;
+        ctx.strokeStyle = value > 0.6 ? `rgba(51, 240, 255, ${value})` : NEON_SOFT;
+        ctx.lineWidth = 2;
+        ctx.lineCap = 'round';
+        ctx.shadowColor = 'rgba(51, 240, 255, 0.5)';
+        ctx.shadowBlur = value * 15;
         ctx.stroke();
+
+        // Draw particle dot at the tip
+        if (value > 0.4) {
+          ctx.beginPath();
+          ctx.arc(x2, y2, 1.5, 0, Math.PI * 2);
+          ctx.fillStyle = NEON;
+          ctx.fill();
+        }
       }
 
       frameRef.current = window.requestAnimationFrame(() => draw(dataArray));
