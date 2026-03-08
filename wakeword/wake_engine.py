@@ -10,17 +10,17 @@ from typing import Any
 from pathlib import Path
 
 try:
-    import sounddevice as sd
+    import sounddevice as sd  # pyre-ignore
 except ImportError:  # pragma: no cover - environment dependent
     sd = None
 
 try:
-    from vosk import KaldiRecognizer, Model
+    from vosk import KaldiRecognizer, Model  # pyre-ignore
 except ImportError:  # pragma: no cover - environment dependent
     KaldiRecognizer = None
     Model = None
 
-from config.settings import (
+from config.settings import (  # pyre-ignore
     VOSK_MODEL_PATH,
     WAKE_BLOCK_SIZE,
     WAKE_CHANNELS,
@@ -30,7 +30,7 @@ from config.settings import (
     WAKE_STREAM_READ_TIMEOUT_SECONDS,
     WAKE_WORD,
 )
-from utils.logger import get_logger
+from utils.logger import get_logger  # pyre-ignore
 
 logger = get_logger("jarvis.wakeword")
 
@@ -66,6 +66,8 @@ def _load_model(model_path: Path) -> Any:
         )
 
     logger.info("Loading Vosk model from: %s", path)
+    if Model is None:
+        raise RuntimeError("Vosk Model class is not available.")
     _MODEL = Model(str(path))
     _MODEL_ERROR_LOGGED = False
     logger.info("Vosk model loaded.")
@@ -124,6 +126,8 @@ def wait_for_wake_word() -> bool:
         return False
 
     idle_sleep_seconds = max(0.2, min(0.5, WAKE_IDLE_SLEEP_SECONDS))
+    if KaldiRecognizer is None:
+        raise RuntimeError("Vosk KaldiRecognizer is not available.")
     recognizer = KaldiRecognizer(model, WAKE_SAMPLE_RATE)
     recognizer.SetWords(False)
     wake_token = WAKE_WORD.strip()
@@ -153,7 +157,9 @@ def wait_for_wake_word() -> bool:
     )
 
     try:
-        with sd.RawInputStream(
+        if sd is None:
+            raise RuntimeError("sounddevice is not available.")
+        with sd.RawInputStream(  # pyre-ignore
             samplerate=WAKE_SAMPLE_RATE,
             blocksize=WAKE_BLOCK_SIZE,
             dtype="int16",
@@ -192,3 +198,5 @@ def wait_for_wake_word() -> bool:
         )
         time.sleep(_ERROR_BACKOFF_SECONDS)
         return False
+
+    return False

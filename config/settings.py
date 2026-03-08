@@ -5,6 +5,9 @@ Centralizes all configurable settings and constants used across modules.
 
 import os
 from pathlib import Path
+from dotenv import load_dotenv  # pyre-ignore # type: ignore
+
+load_dotenv(dotenv_path=Path(__file__).parent.parent / ".env")
 
 # ============================================================================
 # VOICE INPUT SETTINGS
@@ -14,17 +17,17 @@ from pathlib import Path
 MICROPHONE_TIMEOUT_SECONDS = 5
 
 # Maximum time limit for a single phrase in seconds
-PHRASE_TIME_LIMIT_SECONDS = 3
+PHRASE_TIME_LIMIT_SECONDS = 7
 
 # Energy threshold for speech detection (0-4000 typical range)
-ENERGY_THRESHOLD = 300
+ENERGY_THRESHOLD = 200
 
 # ============================================================================
 # TEXT-TO-SPEECH SETTINGS
 # ============================================================================
 
 # Speech rate for TTS output (words per minute)
-SPEECH_RATE = 165
+SPEECH_RATE = 160
 
 # TTS backend selector: "elevenlabs", "coqui", "fallback"
 TTS_BACKEND = os.getenv("TTS_BACKEND", "fallback").strip().lower()
@@ -34,7 +37,7 @@ AUDIO_CACHE_DIR = Path(os.getenv("AUDIO_CACHE_DIR", "cache/tts"))
 
 # ElevenLabs settings (cloud AI voice)
 ELEVENLABS_API_KEY = os.getenv("ELEVENLABS_API_KEY", "").strip()
-ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "EXAVITQu4vr4xnSDxMaL").strip()
+ELEVENLABS_VOICE_ID = os.getenv("ELEVENLABS_VOICE_ID", "pNInz6ovClq8tc97oR3m").strip()
 ELEVENLABS_MODEL_ID = os.getenv("ELEVENLABS_MODEL_ID", "eleven_turbo_v2_5").strip()
 ELEVENLABS_OUTPUT_SAMPLE_RATE = int(os.getenv("ELEVENLABS_OUTPUT_SAMPLE_RATE", "16000"))
 
@@ -135,3 +138,8 @@ WS_BRIDGE_ENABLED = os.getenv("WS_BRIDGE_ENABLED", "1").strip().lower() not in {
 # Bind host/port for websocket server consumed by renderer.
 WS_BRIDGE_HOST = os.getenv("WS_BRIDGE_HOST", "127.0.0.1").strip()
 WS_BRIDGE_PORT = int(os.getenv("WS_BRIDGE_PORT", "8765"))
+
+# ============================================================================
+# MEMORY CONFIGURATION
+# ============================================================================
+MEMORY_FILE_PATH = os.getenv("MEMORY_FILE_PATH", "data/memory.json")

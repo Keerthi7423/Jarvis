@@ -5,10 +5,12 @@
   "main": "main.js",
   "scripts": {
     "start": "electron .",
-    "dev": "concurrently \"vite\" \"wait-on tcp:5173 && electron .\"",
+    "dev": "concurrently \"vite\" \"wait-on tcp:5174 && electron .\"",
+    "dev:safe": "concurrently \"vite\" \"wait-on tcp:5174 && electron . --disable-gpu --no-sandbox\"",
     "build": "vite build"
   },
   "dependencies": {
+    "framer-motion": "^12.35.1",
     "react": "^18.3.1",
     "react-dom": "^18.3.1"
   },

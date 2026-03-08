@@ -2,7 +2,7 @@
 
 from __future__ import annotations
 
-from utils.logger import get_logger
+from utils.logger import get_logger  # pyre-ignore
 
 logger = get_logger("jarvis.error_handler")
 

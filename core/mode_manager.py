@@ -4,7 +4,7 @@ from __future__ import annotations
 
 import threading
 
-SUPPORTED_MODES = ("normal", "study", "coding")
+SUPPORTED_MODES = ("normal", "study", "coding", "chat")
 
 _DEFAULT_MODE = "normal"
 _mode_lock = threading.Lock()

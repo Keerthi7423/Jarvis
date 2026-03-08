@@ -10,14 +10,14 @@ Provides speech recognition through Google Speech-to-Text API with:
 
 from __future__ import annotations
 
-import speech_recognition as sr
-
-from config.settings import (
+import speech_recognition as sr  # pyre-ignore
+from config.settings import (  # pyre-ignore
     ENERGY_THRESHOLD,
     MICROPHONE_TIMEOUT_SECONDS,
     PHRASE_TIME_LIMIT_SECONDS,
 )
-from utils.logger import get_logger
+from core.error_handler import handle_error  # pyre-ignore
+from utils.logger import get_logger  # pyre-ignore
 
 logger = get_logger("jarvis.listener")
 
@@ -46,7 +46,7 @@ def listen() -> str | None:
 
             # Adjust for ambient noise to improve recognition
             try:
-                _RECOGNIZER.adjust_for_ambient_noise(source, duration=1)
+                _RECOGNIZER.adjust_for_ambient_noise(source, duration=0.1)
             except Exception as exc:
                 logger.warning("Could not adjust for ambient noise: %s", exc)
                 # Continue anyway, use default threshold
@@ -77,21 +77,17 @@ def listen() -> str | None:
             return None
 
         except sr.RequestError as exc:
-            from core.error_handler import handle_error
             handle_error(exc, "Speech recognition service error (likely internet)")
             return None
 
     except FileNotFoundError as exc:
-        from core.error_handler import handle_error
         handle_error(exc, "Microphone device not found")
         return None
 
     except OSError as exc:
-        from core.error_handler import handle_error
         handle_error(exc, "System error accessing microphone")
         return None
 
     except Exception as exc:
-        from core.error_handler import handle_error
         handle_error(exc, "Unexpected listener error")
         return None

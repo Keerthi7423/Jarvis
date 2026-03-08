@@ -15,8 +15,10 @@ from config.settings import (  # pyre-ignore
 from commands.system_commands import _normalize_command_text, execute_command, is_exit_command, resolve_mode_command  # pyre-ignore
 from commands.workflows import execute_workflow, get_workflow_success_message, resolve_workflow  # pyre-ignore
 from core.acknowledgements import get_command_ack, get_wake_ack  # pyre-ignore
+from core.ai_chat import ask_ai  # pyre-ignore
 from core.event_monitor import start_event_monitor  # pyre-ignore
 from core.greetings import get_time_based_greeting  # pyre-ignore
+from core.memory_manager import delete_memory, get_memory, save_memory  # pyre-ignore
 from core.mode_manager import get_mode, set_mode  # pyre-ignore
 from core.plugin_loader import execute_plugin_command, load_plugins  # pyre-ignore
 from services.ai_service import ai_response, check_ai_fallback_health  # pyre-ignore
@@ -37,10 +39,19 @@ class JarvisAssistant:
         self._idle_sleep_seconds = max(0.2, min(0.5, ASSISTANT_IDLE_SLEEP_SECONDS))
         self._listen_handoff_seconds = max(0.0, ASSISTANT_LISTEN_HANDOFF_SECONDS)
         self._next_wake_allowed_at = 0.0
-        self._ws_bridge = WebSocketBridge()
+        self._has_greeted = False
+        self._ws_bridge = WebSocketBridge(on_connect_cb=self._on_ui_connect)
         self._ws_bridge.start()
         self._publish_mode_state()
         logger.info("Jarvis Assistant initialized.")
+
+    def _on_ui_connect(self) -> None:
+        """Triggered when the Electron dashboard connects."""
+        if not self._has_greeted:
+            logger.info("UI connected. Triggering startup greeting.")
+            startup_greeting = get_time_based_greeting()
+            self._safe_speak(startup_greeting, mode="greeting")
+            self._has_greeted = True
 
     def _safe_speak(self, message: str, mode: str = "normal", publish_event: bool = True) -> bool:
         """Speak safely and report whether synthesis/playback succeeded."""
@@ -99,8 +110,7 @@ class JarvisAssistant:
             logger.info(ai_status)
         else:
             logger.warning(ai_status)
-        startup_greeting = get_time_based_greeting()
-        self._safe_speak(startup_greeting, mode="greeting")
+        
         self._publish_mode_state()
 
         try:
@@ -139,8 +149,34 @@ class JarvisAssistant:
                     self._apply_wake_cooldown()
                     continue
 
+                # NEW: Chat Mode logic
+                if get_mode() == "chat":
+                    logger.info("Chat mode active. Forwarding to AI.")
+                    ai_reply = ask_ai(user_text)
+                    self._safe_speak(ai_reply)
+                    self._apply_wake_cooldown()
+                    continue
+
                 try:
                     command_text = _normalize_command_text(user_text)
+
+                    # MEMORY LOGIC
+                    if command_text.startswith("my name is"):
+                        name = command_text[len("my name is"):].strip().title()
+                        if name:
+                            save_memory("name", name)
+                            self._safe_speak(f"I will remember your name is {name}.", mode="calm")
+                            self._apply_wake_cooldown()
+                            continue
+                    elif command_text == "what is my name":
+                        name = get_memory("name")
+                        if name:
+                            self._safe_speak(f"Your name is {name}.", mode="calm")
+                        else:
+                            self._safe_speak("I do not know your name yet.", mode="calm")
+                        self._apply_wake_cooldown()
+                        continue
+                    
                     workflow_name = resolve_workflow(command_text)
                     if workflow_name:
                         if execute_workflow(workflow_name, execute_command):
@@ -166,12 +202,9 @@ class JarvisAssistant:
                         if not self._safe_speak(get_command_ack(), mode="calm"):
                             self._safe_speak(SUCCESS_MESSAGE, mode="calm")
                     else:
-                        logger.info("Command not recognized: %s", user_text)
-                        fallback_text = ai_response(user_text)
-                        if fallback_text:
-                            self._safe_speak(fallback_text)
-                        else:
-                            self._safe_speak(UNKNOWN_COMMAND_MESSAGE)
+                        logger.info("Command not recognized: %s. Falling back to AI chat.", user_text)
+                        fallback_text = ask_ai(user_text)
+                        self._safe_speak(fallback_text)
                 except RuntimeError as exc:
                     self._safe_speak(str(exc), mode="calm")
 
