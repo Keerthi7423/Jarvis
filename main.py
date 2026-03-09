@@ -4,8 +4,8 @@ This module only handles initialization and startup.
 All logic is delegated to the core assistant module.
 """
 
-from core.assistant import JarvisAssistant
-from utils.logger import get_logger
+from core.assistant import JarvisAssistant  # pyre-ignore
+from core.logger import get_logger  # pyre-ignore
 
 logger = get_logger("jarvis.main")
 

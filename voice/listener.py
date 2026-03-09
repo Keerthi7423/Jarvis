@@ -1,57 +1,34 @@
 ﻿"""Voice listener utility for converting microphone input to text.
-
-Provides speech recognition through Google Speech-to-Text API with:
-- Comprehensive error handling for all failure modes
-- Microphone failure recovery
-- Internet connectivity error handling
-- Structured logging for debugging
-- Configurable timeouts from config.settings
 """
 
-from __future__ import annotations
-
 import speech_recognition as sr  # pyre-ignore
-from config.settings import (  # pyre-ignore
-    ENERGY_THRESHOLD,
-    MICROPHONE_TIMEOUT_SECONDS,
-    PHRASE_TIME_LIMIT_SECONDS,
-)
-from core.error_handler import handle_error  # pyre-ignore
-from utils.logger import get_logger  # pyre-ignore
+from core.logger import get_logger, log_error, log_speech_recognized  # pyre-ignore
+from config.settings import MICROPHONE_TIMEOUT_SECONDS, PHRASE_TIME_LIMIT_SECONDS  # pyre-ignore
 
 logger = get_logger("jarvis.listener")
 
-# Initialize recognizer with configured settings
 _RECOGNIZER = sr.Recognizer()
-_RECOGNIZER.energy_threshold = ENERGY_THRESHOLD
+# Tuned parameters
+_RECOGNIZER.energy_threshold = 300
+_RECOGNIZER.pause_threshold = 0.8
 _RECOGNIZER.dynamic_energy_threshold = True
 
+from voice.speaker import is_speaking  # pyre-ignore
 
 def listen() -> str | None:
-    """Capture a short microphone phrase and return recognized text.
+    if is_speaking:
+        return None
 
-    Handles all failure modes gracefully:
-    - Microphone not available
-    - No speech detected (timeout)
-    - Speech too unclear (unknown value)
-    - Internet connectivity issues
-    - Unexpected errors
-
-    Returns:
-        Recognized text if successful, None if any error occurred.
-    """
     try:
         with sr.Microphone() as source:
-            logger.info("Listening for speech...")
-
-            # Adjust for ambient noise to improve recognition
+            logger.info("Calibrating background noise...")
             try:
-                _RECOGNIZER.adjust_for_ambient_noise(source, duration=0.1)
+                # 1 second for better noise calibration
+                _RECOGNIZER.adjust_for_ambient_noise(source, duration=1.0)
             except Exception as exc:
                 logger.warning("Could not adjust for ambient noise: %s", exc)
-                # Continue anyway, use default threshold
 
-            # Capture audio with configured timeouts
+            logger.info("Listening for speech...")
             try:
                 audio = _RECOGNIZER.listen(
                     source,
@@ -59,35 +36,25 @@ def listen() -> str | None:
                     phrase_time_limit=PHRASE_TIME_LIMIT_SECONDS,
                 )
             except sr.WaitTimeoutError:
-                logger.debug("Listening timed out waiting for speech.")
-                return None
+                # Command timeout
+                return ""
 
-        # Attempt to recognize speech using Google API
         try:
             text = _RECOGNIZER.recognize_google(audio).strip()
-            if not text:
-                logger.info("Recognized empty text.")
-                return None
-
-            logger.info("Recognized speech: %s", text)
-            return text
-
+            if text:
+                log_speech_recognized(text)
+                return text
+            return ""
         except sr.UnknownValueError:
-            logger.debug("Speech was unclear and could not be transcribed.")
-            return None
-
+            return "__UNRECOGNIZED__"
         except sr.RequestError as exc:
-            handle_error(exc, "Speech recognition service error (likely internet)")
+            log_error(exc, "Speech recognition service error")
             return None
-
-    except FileNotFoundError as exc:
-        handle_error(exc, "Microphone device not found")
-        return None
 
     except OSError as exc:
-        handle_error(exc, "System error accessing microphone")
+        log_error(exc, "System error accessing microphone")
         return None
-
     except Exception as exc:
-        handle_error(exc, "Unexpected listener error")
+        log_error(exc, "Unexpected listener error")
         return None
+    return None

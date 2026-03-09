@@ -1,4 +1,4 @@
-"""Core assistant orchestrator for Jarvis wake-word command loop."""
+"""Core assistant orchestrator for Jarvis continuous listening loop."""
 
 from __future__ import annotations
 
@@ -6,8 +6,6 @@ import time
 
 from config.settings import (  # pyre-ignore
     ASSISTANT_IDLE_SLEEP_SECONDS,
-    ASSISTANT_LISTEN_HANDOFF_SECONDS,
-    ASSISTANT_WAKE_COOLDOWN_SECONDS,
     SHUTDOWN_MESSAGE,
     SUCCESS_MESSAGE,
     UNKNOWN_COMMAND_MESSAGE,
@@ -23,7 +21,7 @@ from core.mode_manager import get_mode, set_mode  # pyre-ignore
 from core.plugin_loader import execute_plugin_command, load_plugins  # pyre-ignore
 from services.ai_service import ai_response, check_ai_fallback_health  # pyre-ignore
 from services.ws_bridge import WebSocketBridge  # pyre-ignore
-from utils.logger import get_logger  # pyre-ignore
+from core.logger import get_logger, log_wake_word, log_speech_recognized, log_command_execution, log_error  # pyre-ignore
 from voice.listener import listen  # pyre-ignore
 from voice.speaker import check_tts_backend_health, speak  # pyre-ignore
 from wakeword.wake_engine import wait_for_wake_word  # pyre-ignore
@@ -32,18 +30,15 @@ logger = get_logger("jarvis.assistant")
 
 
 class JarvisAssistant:
-    """Main orchestrator for wake -> command -> execute lifecycle."""
+    """Main orchestrator for continuous listening lifecycle."""
 
     def __init__(self) -> None:
-        self._wake_cooldown_seconds = max(1.0, min(2.0, ASSISTANT_WAKE_COOLDOWN_SECONDS))
         self._idle_sleep_seconds = max(0.2, min(0.5, ASSISTANT_IDLE_SLEEP_SECONDS))
-        self._listen_handoff_seconds = max(0.0, ASSISTANT_LISTEN_HANDOFF_SECONDS)
-        self._next_wake_allowed_at = 0.0
         self._has_greeted = False
         self._ws_bridge = WebSocketBridge(on_connect_cb=self._on_ui_connect)
         self._ws_bridge.start()
         self._publish_mode_state()
-        logger.info("Jarvis Assistant initialized.")
+        logger.info("Jarvis Assistant initialized in continuous listening mode.")
 
     def _on_ui_connect(self) -> None:
         """Triggered when the Electron dashboard connects."""
@@ -59,16 +54,10 @@ class JarvisAssistant:
             self._ws_bridge.publish("response", message)
         try:
             ok = speak(message, mode=mode)
-            if not ok:
-                logger.warning("Speak returned False for message '%s' (mode=%s).", message, mode)
             return ok
         except Exception as exc:
-            logger.error("Failed to speak message '%s': %s", message, exc, exc_info=True)
+            log_error(exc, "safe_speak")
             return False
-
-    def _apply_wake_cooldown(self) -> None:
-        """Throttle wake re-arm to avoid immediate retriggers."""
-        self._next_wake_allowed_at = time.monotonic() + self._wake_cooldown_seconds
 
     def _publish_mode_state(self) -> None:
         """Publish the current mode so the dashboard can stay synchronized."""
@@ -80,7 +69,6 @@ class JarvisAssistant:
         current_mode = get_mode()
         if requested_mode == current_mode:
             message = f"{requested_mode.capitalize()} mode already active."
-            logger.info("Mode command received for current mode: %s", requested_mode)
             self._publish_mode_state()
             self._safe_speak(message, mode="calm")
             return True
@@ -88,7 +76,6 @@ class JarvisAssistant:
         new_mode = set_mode(requested_mode)
         self._publish_mode_state()
         confirmation = f"{new_mode.capitalize()} mode activated."
-        logger.info("Assistant mode changed: %s -> %s", current_mode, new_mode)
         self._safe_speak(confirmation, mode="calm")
         return True
 
@@ -115,50 +102,53 @@ class JarvisAssistant:
 
         try:
             while True:
-                now = time.monotonic()
-                if now < self._next_wake_allowed_at:
-                    time.sleep(min(self._idle_sleep_seconds, self._next_wake_allowed_at - now))
-                    continue
+                time.sleep(self._idle_sleep_seconds)
 
-                # Stay in low-cost wake mode until activation is detected.
-                if not wait_for_wake_word():
-                    time.sleep(self._idle_sleep_seconds)
-                    continue
-
-                self._safe_speak(get_wake_ack(), mode="calm")
-                if self._listen_handoff_seconds > 0:
-                    time.sleep(self._listen_handoff_seconds)
-
-                user_text = listen()
-                if not user_text:
-                    logger.info("No command captured after wake trigger. Returning to wake mode.")
-                    self._apply_wake_cooldown()
-                    continue
-
-                logger.info("User input recognized: %s", user_text)
-                self._ws_bridge.publish("command", user_text)
-
-                if is_exit_command(user_text):
-                    logger.info("Exit command detected, shutting down gracefully.")
-                    self._safe_speak(SHUTDOWN_MESSAGE)
-                    return 0
-
-                requested_mode = resolve_mode_command(user_text)
-                if requested_mode:
-                    self._handle_mode_command(requested_mode)
-                    self._apply_wake_cooldown()
-                    continue
-
-                # NEW: Chat Mode logic
-                if get_mode() == "chat":
-                    logger.info("Chat mode active. Forwarding to AI.")
-                    ai_reply = ask_ai(user_text)
-                    self._safe_speak(ai_reply)
-                    self._apply_wake_cooldown()
-                    continue
-
+                # Continuous listening: listen -> recognize -> execute -> speak
                 try:
+                    user_text = listen()
+                    if user_text is None or user_text == "":
+                        continue
+
+                    if user_text == "__UNRECOGNIZED__":
+                        import random
+                        fallback_msg = random.choice(["I didn't catch that.", "Please repeat."])
+                        self._safe_speak(fallback_msg, mode="calm")
+                        continue
+
+                    # Handled by listener log_speech_recognized
+                    self._ws_bridge.publish("command", user_text)
+
                     command_text = _normalize_command_text(user_text)
+                    log_command_execution(command_text)
+
+                    dangerous_commands = ["delete file", "shutdown", "exit", "quit", "rm", "remove", "wipe"]
+                    is_dangerous = any(cmd in command_text.lower() for cmd in dangerous_commands)
+
+                    if is_dangerous:
+                        self._safe_speak(f"Did you say {command_text}?")
+                        confirmation = listen()
+                        if not confirmation or confirmation == "__UNRECOGNIZED__":
+                            self._safe_speak("Command cancelled.", mode="calm")
+                            continue
+                        if not any(word in confirmation.lower() for word in ["yes", "yeah", "yep", "sure", "do it"]):
+                            self._safe_speak("Command cancelled.", mode="calm")
+                            continue
+
+                    if is_exit_command(user_text):
+                        logger.info("Exit command detected, shutting down gracefully.")
+                        self._safe_speak(SHUTDOWN_MESSAGE)
+                        return 0
+
+                    requested_mode = resolve_mode_command(user_text)
+                    if requested_mode:
+                        self._handle_mode_command(requested_mode)
+                        continue
+
+                    if get_mode() == "chat":
+                        ai_reply = ask_ai(user_text)
+                        self._safe_speak(ai_reply)
+                        continue
 
                     # MEMORY LOGIC
                     if command_text.startswith("my name is"):
@@ -166,7 +156,6 @@ class JarvisAssistant:
                         if name:
                             save_memory("name", name)
                             self._safe_speak(f"I will remember your name is {name}.", mode="calm")
-                            self._apply_wake_cooldown()
                             continue
                     elif command_text == "what is my name":
                         name = get_memory("name")
@@ -174,7 +163,6 @@ class JarvisAssistant:
                             self._safe_speak(f"Your name is {name}.", mode="calm")
                         else:
                             self._safe_speak("I do not know your name yet.", mode="calm")
-                        self._apply_wake_cooldown()
                         continue
                     
                     workflow_name = resolve_workflow(command_text)
@@ -184,7 +172,6 @@ class JarvisAssistant:
                             self._safe_speak(success_message, mode="calm")
                         else:
                             self._safe_speak("Workflow execution failed.", mode="calm")
-                        self._apply_wake_cooldown()
                         continue
 
                     plugin_handled, plugin_response = execute_plugin_command(command_text)
@@ -194,28 +181,27 @@ class JarvisAssistant:
                         else:
                             if not self._safe_speak(get_command_ack(), mode="calm"):
                                 self._safe_speak(SUCCESS_MESSAGE, mode="calm")
-                        self._apply_wake_cooldown()
                         continue
 
                     if execute_command(user_text):
-                        logger.info("Command executed successfully.")
                         if not self._safe_speak(get_command_ack(), mode="calm"):
                             self._safe_speak(SUCCESS_MESSAGE, mode="calm")
                     else:
-                        logger.info("Command not recognized: %s. Falling back to AI chat.", user_text)
                         fallback_text = ask_ai(user_text)
                         self._safe_speak(fallback_text)
+                        
                 except RuntimeError as exc:
                     self._safe_speak(str(exc), mode="calm")
-
-                self._apply_wake_cooldown()
+                except Exception as exc:
+                    log_error(exc, "command_execution_block")
+                    self._safe_speak("An unexpected error occurred while executing the command.")
 
         except KeyboardInterrupt:
             logger.info("Shutdown requested from keyboard interrupt.")
             self._safe_speak(SHUTDOWN_MESSAGE)
             return 0
         except Exception as exc:
-            logger.error("Unexpected error in main loop: %s", exc, exc_info=True)
+            log_error(exc, "main_assistant_loop")
             return 1
             
         return 0
