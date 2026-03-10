@@ -38,6 +38,7 @@ class JarvisAssistant:
         self._ws_bridge = WebSocketBridge(on_connect_cb=self._on_ui_connect)
         self._ws_bridge.start()
         self._publish_mode_state()
+        self._is_awake = False
         logger.info("Jarvis Assistant initialized in continuous listening mode.")
 
     def _on_ui_connect(self) -> None:
@@ -97,7 +98,6 @@ class JarvisAssistant:
             logger.info(ai_status)
         else:
             logger.warning(ai_status)
-        
         self._publish_mode_state()
 
         try:
@@ -106,8 +106,21 @@ class JarvisAssistant:
 
                 # Continuous listening: listen -> recognize -> execute -> speak
                 try:
+                    if not self._is_awake:
+                        if not wait_for_wake_word():
+                            continue
+                            
+                        from core.voice_auth import authenticate_voice  # pyre-ignore
+                        if authenticate_voice():
+                            self._safe_speak("Voice verified. Welcome back.", mode="calm")
+                            self._is_awake = True
+                        else:
+                            self._safe_speak("Voice not recognized.", mode="calm")
+                            continue
+
                     user_text = listen()
                     if user_text is None or user_text == "":
+                        self._is_awake = False
                         continue
 
                     if user_text == "__UNRECOGNIZED__":
@@ -165,6 +178,12 @@ class JarvisAssistant:
                             self._safe_speak("I do not know your name yet.", mode="calm")
                         continue
                     
+                    elif command_text == "create voice profile":
+                        from core.voice_auth import create_voice_profile  # pyre-ignore
+                        if create_voice_profile():
+                            logger.info("Voice profile created successfully.")
+                        continue
+                    
                     workflow_name = resolve_workflow(command_text)
                     if workflow_name:
                         if execute_workflow(workflow_name, execute_command):
@@ -183,12 +202,19 @@ class JarvisAssistant:
                                 self._safe_speak(SUCCESS_MESSAGE, mode="calm")
                         continue
 
-                    if execute_command(user_text):
-                        if not self._safe_speak(get_command_ack(), mode="calm"):
-                            self._safe_speak(SUCCESS_MESSAGE, mode="calm")
+                    from core.intent_detector import detect_intent  # pyre-ignore
+                    intent = detect_intent(command_text)
+                    
+                    if intent == "command":
+                        if execute_command(user_text):
+                            if not self._safe_speak(get_command_ack(), mode="calm"):
+                                self._safe_speak(SUCCESS_MESSAGE, mode="calm")
+                        else:
+                            fallback_text = ask_ai(user_text)
+                            self._safe_speak(fallback_text)
                     else:
-                        fallback_text = ask_ai(user_text)
-                        self._safe_speak(fallback_text)
+                        ai_reply = ask_ai(user_text)
+                        self._safe_speak(ai_reply)
                         
                 except RuntimeError as exc:
                     self._safe_speak(str(exc), mode="calm")
