@@ -20,7 +20,11 @@ function createWindow() {
   Menu.setApplicationMenu(null);
 
   if (isDev) {
+    win.webContents.on('console-message', (event, level, message, line, sourceId) => {
+      console.log(`[Renderer] ${message}`);
+    });
     win.loadURL('http://localhost:5174');
+    win.webContents.openDevTools({ mode: 'detach' });
     return;
   }
 
