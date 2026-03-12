@@ -10,6 +10,8 @@ from config.settings import (  # pyre-ignore
     SUCCESS_MESSAGE,
     UNKNOWN_COMMAND_MESSAGE,
 )
+from commands.whatsapp_commands import execute_whatsapp_command  # pyre-ignore
+from commands.social_commands import execute_social_command  # pyre-ignore
 from commands.system_commands import _normalize_command_text, execute_command, is_exit_command, resolve_mode_command  # pyre-ignore
 from commands.workflows import execute_workflow, get_workflow_success_message, resolve_workflow  # pyre-ignore
 from core.acknowledgements import get_command_ack, get_wake_ack  # pyre-ignore
@@ -200,6 +202,17 @@ class JarvisAssistant:
                         else:
                             if not self._safe_speak(get_command_ack(), mode="calm"):
                                 self._safe_speak(SUCCESS_MESSAGE, mode="calm")
+                        continue
+
+                    whatsapp_handled, whatsapp_response = execute_whatsapp_command(user_text, listen, self._safe_speak)
+                    if whatsapp_handled:
+                        if whatsapp_response:
+                            self._safe_speak(whatsapp_response, mode="calm")
+                        continue
+
+                    social_handled, social_response = execute_social_command(user_text)
+                    if social_handled:
+                        self._safe_speak(social_response, mode="calm")
                         continue
 
                     from core.intent_detector import detect_intent  # pyre-ignore
