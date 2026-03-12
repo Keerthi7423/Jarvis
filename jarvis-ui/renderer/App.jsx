@@ -6,6 +6,7 @@ import FeedPanel from './components/FeedPanel.jsx';
 import StatusIndicator from './components/StatusIndicator.jsx';
 import StartupScreen from './components/StartupScreen.jsx';
 import Dashboard from './components/Dashboard.jsx';
+import JarvisVoiceInterface from './components/JarvisVoiceInterface.jsx';
 
 const RESPONSE_FEED = [
   'Assistant initialized',
@@ -37,7 +38,7 @@ export default function App() {
   }, [isBooted]);
 
   return (
-    <main className="relative min-h-screen overflow-hidden bg-[#040916] text-slate-100 font-hud">
+    <main className="relative min-h-screen overflow-hidden bg-[#00050a] text-slate-100 font-hud">
       <AnimatePresence>
         {!isBooted && (
           <StartupScreen key="startup" onComplete={() => setIsBooted(true)} />
@@ -45,20 +46,16 @@ export default function App() {
       </AnimatePresence>
 
       {/* Background HUD Layers */}
-      <div className="hud-grid-overlay pointer-events-none absolute inset-0 opacity-10" />
-      <div className="hud-radial-overlay pointer-events-none absolute inset-0 opacity-40" />
+      <div className="hud-grid-overlay pointer-events-none absolute inset-0 opacity-[0.05]" />
 
-      {/* Dashboard - Mounted immediately for early bridge connection */}
-      <div className={`relative z-10 transition-all duration-1000 ${isBooted ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-110 blur-xl pointer-events-none'}`}>
+      {/* Main Cinematic Interface */}
+      <div className={`relative z-10 h-full transition-all duration-1000 ${isBooted ? 'opacity-100 scale-100 blur-0' : 'opacity-0 scale-110 blur-xl pointer-events-none'}`}>
         <Dashboard assistantState={assistantState} />
       </div>
 
-      {/* Ambient HUD Data */}
-      <div className="absolute bottom-6 left-8 font-mono text-[10px] uppercase tracking-widest text-cyan-500/20">
-        POS: 40.7128N 74.0060W :: SCAN_ALT: 420M
-      </div>
-      <div className="absolute bottom-6 right-8 font-mono text-[10px] uppercase tracking-widest text-cyan-500/20">
-        CORE_LOAD: OPTIMAL :: THREAD_04: SYNC
+      {/* Ambient HUD Data Overlay */}
+      <div className="absolute top-2 left-1/2 -translate-x-1/2 opacity-10 pointer-events-none">
+        <span className="text-[8px] uppercase tracking-[1em] text-cyan-500">Secure_Connection::Stable</span>
       </div>
     </main>
   );
